@@ -87,16 +87,6 @@ global:
     # Default: "preferred_username"
     userClaim: ""
     
-    # Enable OIDC auto-provisioning (optional)
-    # Automatically create user accounts on first login
-    # Default: true
-    autoProvision: true
-    
-    # Role assignment driver (optional)
-    # How to assign roles to users: "oidc" (from token claims) or "default" (static roles)
-    # Default: "oidc"
-    roleDriver: ""
-    
     # OIDC claim containing user roles (optional)
     # The claim from the ID token that contains user role assignments
     # Common values: "roles", "groups", "realm_access.roles"

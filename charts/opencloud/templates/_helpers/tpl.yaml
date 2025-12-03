@@ -228,7 +228,12 @@ Generate common environment variables for OpenCloud
 - name: PROXY_TLS
   value: {{ .Values.opencloud.config.env.proxy.tls | quote }}
 - name: PROXY_ENABLE_BASIC_AUTH
+  {{- $oidcEnabled := or .Values.global.oidc.enabled .Values.keycloak.internal.enabled }}
+  {{- if $oidcEnabled }}
+  value: "false"
+  {{- else }}
   value: {{ .Values.opencloud.config.env.proxy.enableBasicAuth | quote }}
+  {{- end }}
 
 # Gateway settings
 - name: GATEWAY_GRPC_ADDR
@@ -323,22 +328,14 @@ External OIDC takes precedence over internal Keycloak
 
 # IDP specific configuration
 - name: PROXY_AUTOPROVISION_ACCOUNTS
-  {{- if $useExternalOidc }}
-  value: {{ default .Values.opencloud.config.env.proxy.autoprovisionAccounts .Values.global.oidc.autoProvision | quote }}
-  {{- else }}
   value: {{ .Values.opencloud.config.env.proxy.autoprovisionAccounts | quote }}
-  {{- end }}
 
 # User properties are edited in the IDP, so we have to make them readonly
 - name: FRONTEND_READONLY_USER_ATTRIBUTES
   value: {{ .Values.opencloud.config.env.frontend.readonlyUserAttributes | quote }}
 
 - name: PROXY_ROLE_ASSIGNMENT_DRIVER
-  {{- if $useExternalOidc }}
-  value: {{ default .Values.opencloud.config.env.proxy.roleAssignmentDriver .Values.global.oidc.roleDriver | quote }}
-  {{- else }}
   value: {{ .Values.opencloud.config.env.proxy.roleAssignmentDriver | quote }}
-  {{- end }}
 
 # OIDC Issuer URL
 - name: OC_OIDC_ISSUER
@@ -351,11 +348,7 @@ External OIDC takes precedence over internal Keycloak
 # Account management URL
 - name: WEB_OPTION_ACCOUNT_EDIT_LINK_HREF
   {{- if $useExternalOidc }}
-    {{- if .Values.global.oidc.accountUrl }}
-  value: {{ .Values.global.oidc.accountUrl | quote }}
-    {{- else }}
-  value: ""
-    {{- end }}
+  value: {{ .Values.global.oidc.accountUrl | default "" | quote }}
   {{- else }}
   value: {{ printf "https://%s/realms/%s/account" (include "opencloud.keycloak.domain" .) .Values.keycloak.internal.realm | quote }}
   {{- end }}
@@ -365,7 +358,11 @@ External OIDC takes precedence over internal Keycloak
 
 # OIDC Client ID
 - name: WEB_OIDC_CLIENT_ID
-  value: {{ .Values.global.oidc.clientId | quote }}
+  {{- if $useExternalOidc }}
+  value: {{ required "global.oidc.clientId is required when global.oidc.enabled is true" .Values.global.oidc.clientId | quote }}
+  {{- else }}
+  value: "web"
+  {{- end }}
 
 # User identification claims
 - name: PROXY_USER_OIDC_CLAIM
