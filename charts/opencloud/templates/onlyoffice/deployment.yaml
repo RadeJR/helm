@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: onlyoffice
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.onlyoffice.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.onlyoffice.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.onlyoffice.image.pullPolicy "global" .Values.global) }}
           command: ["/bin/sh", "/entrypoint-override.sh"]
           env:

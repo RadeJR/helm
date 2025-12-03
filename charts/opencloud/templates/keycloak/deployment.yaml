@@ -24,7 +24,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: keycloak
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.identityProvider.internal.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.identityProvider.internal.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.identityProvider.internal.image.pullPolicy "global" .Values.global) }}
           securityContext:
             allowPrivilegeEscalation: false

@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: collabora
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.collabora.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.collabora.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.collabora.image.pullPolicy "global" .Values.global) }}
           command: ['/bin/bash', '-c']
           args:

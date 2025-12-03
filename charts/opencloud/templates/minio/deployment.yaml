@@ -24,7 +24,7 @@ spec:
         fsGroup: 1000
       initContainers:
         - name: init-minio-bucket
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
           securityContext:
             runAsUser: 1000
@@ -38,7 +38,7 @@ spec:
               mountPath: /data
       containers:
         - name: minio
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.opencloud.storage.s3.internal.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.opencloud.storage.s3.internal.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.opencloud.storage.s3.internal.image.pullPolicy "global" .Values.global) }}
           securityContext:
             runAsUser: 1000

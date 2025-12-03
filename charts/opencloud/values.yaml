@@ -175,6 +175,8 @@ busybox:
 # PostgreSQL settings for Keycloak
 postgres:
   # Enable PostgreSQL
+  # This is only used when identityProvider.internal.enabled is true,
+  # otherwise this is disabled.
   enabled: true
   # PostgreSQL image settings
   image:
@@ -427,39 +429,40 @@ onlyoffice:
 # OPENCLOUD CORE
 # =====================================================================
 
-# Service Account configuration
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
-
-# Image settings for OpenCloud
-image:
-  # OpenCloud image registry
-  registry: docker.io
-  # OpenCloud image repository
-  repository: opencloudeu/opencloud-rolling
-  # OpenCloud image tag
-  tag: "2.1.0"
-  # Image pull policy
-  pullPolicy: IfNotPresent
-  # Image pull secrets for private registries
-  # Reference existing secrets by name
-  pullSecrets: []
-  # Example:
-  # - name: my-registry-secret
-
 # OpenCloud core settings
 opencloud:
   # Enable OpenCloud
   enabled: true
+  
   # Number of replicas (Note: When using multiple replicas, persistence should be disabled
   # or use a storage class that supports ReadWriteMany access mode)
   replicas: 1
+  
+  # Image settings for OpenCloud
+  image:
+    # OpenCloud image registry
+    registry: docker.io
+    # OpenCloud image repository
+    repository: opencloudeu/opencloud-rolling
+    # OpenCloud image tag (defaults to Chart.appVersion if empty)
+    tag: ""
+    # Image pull policy
+    pullPolicy: IfNotPresent
+    # Image pull secrets for private registries
+    # Reference existing secrets by name
+    pullSecrets: []
+    # Example:
+    # - name: my-registry-secret
+  
+  # Service Account configuration
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
   
   # Use existing secret for opencloud admin credentials (Note: secretKeyName must be adminPassword)
   existingSecret: ""

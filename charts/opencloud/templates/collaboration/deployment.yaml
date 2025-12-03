@@ -26,14 +26,14 @@ spec:
       initContainers:
         # Wait for OpenCloud to be ready
         - name: wait-for-opencloud
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
           command: ['sh', '-c', 'until wget -q -O- http://{{ include "opencloud.opencloud.fullname" . }}:9200/health; do echo waiting for opencloud; sleep 5; done;']
 
         {{- if not .Values.opencloud.persistence.enabled }}
         # Copy config from OpenCloud API if persistence is disabled
         - name: copy-config
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
           command: ['sh', '-c', 'mkdir -p /etc/opencloud && wget -q -O /etc/opencloud/config.json http://{{ include "opencloud.opencloud.fullname" . }}:9200/api/v1/config/secrets || echo "Failed to get config from OpenCloud"']
           volumeMounts:
@@ -44,21 +44,21 @@ spec:
         {{- if .Values.onlyoffice.enabled }}
         # Wait for OnlyOffice to be ready
         - name: wait-for-onlyoffice
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
           command: ['sh', '-c', 'until wget -q -O- http://{{ include "opencloud.fullname" . }}-onlyoffice:80/hosting/discovery; do echo waiting for onlyoffice; sleep 2; done;']
         {{- end }}
         {{- if .Values.collabora.enabled }}
         # Wait for Collabora to be ready
         - name: wait-for-collabora
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
           command: ['sh', '-c', 'until wget -q -O- http://{{ include "opencloud.fullname" . }}-collabora:9980/hosting/discovery; do echo waiting for collabora; sleep 2; done;']
         {{- end }}
       containers:
         - name: collaboration
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.image "global" .Values.global) | quote }}
-          imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.image.pullPolicy "global" .Values.global) }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.opencloud.image "global" .Values.global) | quote }}
+          imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.opencloud.image.pullPolicy "global" .Values.global) }}
           command: ["/bin/sh"]
           args: ["-c", "opencloud collaboration server"]
           env:

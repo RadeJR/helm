@@ -41,7 +41,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.image.pullSecrets }}
+      {{- with .Values.opencloud.image.pullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -65,7 +65,7 @@ spec:
       {{- end }}
       initContainers:
         - name: init-config
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
           securityContext:
             allowPrivilegeEscalation: false
@@ -89,7 +89,7 @@ spec:
         # Web extensions init containers
         {{- if .Values.webExtensions.extensions.drawio.enabled }}
         - name: init-drawio
-          image: {{ include "opencloud.image" (dict "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.drawio.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.drawio.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -109,7 +109,7 @@ spec:
         {{- end }}
         {{- if .Values.webExtensions.extensions.externalsites.enabled }}
         - name: init-externalsites
-          image: {{ include "opencloud.image" (dict "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.externalsites.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.externalsites.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -129,7 +129,7 @@ spec:
         {{- end }}
         {{- if .Values.webExtensions.extensions.importer.enabled }}
         - name: init-importer
-          image: {{ include "opencloud.image" (dict "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.importer.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.importer.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -149,7 +149,7 @@ spec:
         {{- end }}
         {{- if .Values.webExtensions.extensions.jsonviewer.enabled }}
         - name: init-jsonviewer
-          image: {{ include "opencloud.image" (dict "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.jsonviewer.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.jsonviewer.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -169,7 +169,7 @@ spec:
         {{- end }}
         {{- if .Values.webExtensions.extensions.progressbars.enabled }}
         - name: init-progressbars
-          image: {{ include "opencloud.image" (dict "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.progressbars.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.progressbars.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -189,7 +189,7 @@ spec:
         {{- end }}
         {{- if .Values.webExtensions.extensions.unzip.enabled }}
         - name: init-unzip
-          image: {{ include "opencloud.image" (dict "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.unzip.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" (merge (dict "tag" .Values.webExtensions.extensions.unzip.tag) .Values.webExtensions.image) "global" .Values.global) | quote }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -209,7 +209,7 @@ spec:
         {{- end }}
         # Final init container to copy all extensions to the apps directory
         - name: init-web-extensions
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
           securityContext:
             allowPrivilegeEscalation: false
@@ -234,7 +234,7 @@ spec:
         {{- end }}
       containers:
         - name: opencloud
-          image: {{ include "opencloud.image" (dict "imageValues" .Values.image "global" .Values.global) | quote }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.opencloud.image "global" .Values.global) | quote }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -243,7 +243,7 @@ spec:
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
-          imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.image.pullPolicy "global" .Values.global) }}
+          imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.opencloud.image.pullPolicy "global" .Values.global) }}
           command: ["/bin/sh"]
           args: ["-c", "opencloud init || true; opencloud server"]
           {{- with .Values.opencloud.extraEnvFrom }}

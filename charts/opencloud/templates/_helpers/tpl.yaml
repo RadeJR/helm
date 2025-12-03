@@ -54,10 +54,10 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 Create the name of the service account to use
 */}}
 {{- define "opencloud.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "opencloud.fullname" .) .Values.serviceAccount.name }}
+{{- if .Values.opencloud.serviceAccount.create }}
+{{- default (include "opencloud.fullname" .) .Values.opencloud.serviceAccount.name }}
 {{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- default "default" .Values.opencloud.serviceAccount.name }}
 {{- end }}
 {{- end }}
 
@@ -167,10 +167,11 @@ Return the full image name with registry
 */}}
 {{- define "opencloud.image" -}}
 {{- $registry := include "opencloud.image.registry" (dict "registry" .imageValues.registry "global" .global) -}}
+{{- $tag := .imageValues.tag | default .Chart.AppVersion -}}
 {{- if $registry -}}
-{{- printf "%s/%s:%s" $registry .imageValues.repository .imageValues.tag -}}
+{{- printf "%s/%s:%s" $registry .imageValues.repository $tag -}}
 {{- else -}}
-{{- printf "%s:%s" .imageValues.repository .imageValues.tag -}}
+{{- printf "%s:%s" .imageValues.repository $tag -}}
 {{- end -}}
 {{- end -}}
 
