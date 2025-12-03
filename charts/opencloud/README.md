@@ -313,6 +313,11 @@ The following options allow setting up a POSIX-compatible filesystem (such as NF
 
 **Note:** When using `posixfs` mode, ensure that the underlying storage supports the required access mode (e.g., `ReadWriteMany` for multiple replicas). The underlying filesystem must support `flock` and `xattrs` so for NFS the minimum version is 4.2.
 
+⚠️ **Important**: PosixFS requires exclusive filesystem access in non-collaborative mode (default).
+Do not modify files directly while OpenCloud is running!
+
+For details see: [OpenCloud PosixFS Documentation](https://docs.opencloud.eu/docs/admin/configuration/storage/storage-posix/)
+
 ### NATS Messaging Configuration
 
 | Parameter  | Description | Default |

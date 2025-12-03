@@ -672,7 +672,9 @@ opencloud:
       # The type of the cache store, supported values are: 'memory', 'redis-sentinel', 'nats-js-kv' (default), 'noop'
       idCacheStore: nats-js-kv
       # Path of storage root directory, default is /var/lib/opencloud/storage
-      rootPath: "/var/lib/opencloud/storage"
+      # IMPORTANT: Path must be outside /var/lib/opencloud to avoid permission conflicts
+      # See: https://docs.opencloud.eu/docs/admin/configuration/storage/storage-posix/
+      rootPath: "/mnt/posixfs"
       persistence:
         # Enable persistence
         enabled: true
