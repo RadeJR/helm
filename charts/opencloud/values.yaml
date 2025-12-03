@@ -46,53 +46,6 @@ global:
     # secretName for TLS certificate
     secretName: ""
 
-  # OpenID Connect (OIDC) Provider Configuration
-  # Configure external OIDC provider OR use the built-in Keycloak (keycloak.internal.enabled: true)
-  # If an external OIDC provider is configured, it takes precedence over internal Keycloak
-  oidc:
-    # Enable external OIDC provider (disables automatic configuration from internal Keycloak)
-    # Set to true when using Auth0, Okta, Azure AD, Google, or any other external OIDC provider
-    enabled: false
-    
-    # OpenID Connect issuer URL (required when oidc.enabled: true)
-    # This is the base URL of your OIDC provider
-    # Examples:
-    #   - Auth0: https://yourdomain.auth0.com
-    #   - Okta: https://yourorg.okta.com/oauth2/default
-    #   - Azure AD: https://login.microsoftonline.com/{tenant-id}/v2.0
-    #   - Google: https://accounts.google.com
-    #   - Keycloak: https://keycloak.example.com/realms/myrealm
-    issuer: ""
-    
-    # OIDC client ID for OpenCloud (required when oidc.enabled: true)
-    # This is the client/application ID registered with your OIDC provider
-    clientId: "web"
-    
-    # OIDC account management URL (optional)
-    # URL where users can manage their profile, password, MFA, etc.
-    # If not set, the account management link will not be displayed
-    # Examples:
-    #   - Keycloak: https://keycloak.example.com/realms/myrealm/account
-    #   - Auth0: https://yourdomain.auth0.com/account
-    accountUrl: ""
-    
-    # OIDC scopes to request (optional, has sensible defaults)
-    # Space-separated list of OAuth 2.0 scopes
-    # Default: "openid profile email groups roles"
-    scopes: ""
-    
-    # OIDC claim to use for user identification (optional)
-    # The claim from the ID token that uniquely identifies the user
-    # Common values: "preferred_username", "email", "sub"
-    # Default: "preferred_username"
-    userClaim: ""
-    
-    # OIDC claim containing user roles (optional)
-    # The claim from the ID token that contains user role assignments
-    # Common values: "roles", "groups", "realm_access.roles"
-    # Default: "roles"
-    roleClaim: ""
-
   # Global storage settings
   storage:
     # Storage class for persistent volumes
@@ -108,32 +61,18 @@ global:
     pullPolicy: ""
 
 # =====================================================================
-# UTILITY IMAGES
+# IDENTITY PROVIDER
 # =====================================================================
 
-# Busybox image settings (used for init containers)
-busybox:
-  image:
-    # Busybox image registry
-    registry: docker.io
-    # Busybox image repository
-    repository: library/busybox
-    # Busybox image tag
-    tag: "1.36"
-    # Image pull policy
-    pullPolicy: IfNotPresent
-
-# =====================================================================
-# IDENTITY PROVIDER (KEYCLOAK)
-# =====================================================================
-
-# Keycloak settings for identity and access management
-# Structure follows issue #64 - standardized internal/external pattern
-keycloak:
+# Identity Provider configuration
+# Choose ONE provider: either internal Keycloak OR external OIDC provider
+# If both are enabled, external OIDC takes precedence
+identityProvider:
   # Internal Keycloak deployment
   internal:
     # Enable internal Keycloak instance
     enabled: true
+    
     # Keycloak image settings
     image:
       # Keycloak image registry
@@ -144,6 +83,7 @@ keycloak:
       tag: "26.1.4"
       # Image pull policy
       pullPolicy: IfNotPresent
+    
     # Number of Keycloak replicas
     replicas: 1
 
@@ -151,11 +91,11 @@ keycloak:
     existingSecret: ""
 
     # Admin user
-    # ignored if keycloak.internal.existingSecret is set
+    # ignored if identityProvider.internal.existingSecret is set
     adminUser: admin
 
     # Admin password
-    # ignored if keycloak.internal.existingSecret is set
+    # ignored if identityProvider.internal.existingSecret is set
     adminPassword: admin
 
     # Keycloak realm
@@ -179,8 +119,58 @@ keycloak:
       allowCredentials: "true"
       # Max age in seconds
       maxAge: "3600"
+    
     # Resources
     resources: {}
+  
+  # External OIDC Provider
+  external:
+    # Enable external OIDC provider
+    # Set to true when using Auth0, Okta, Azure AD, Google, or any other external OIDC provider
+    # NOTE: When enabled, this takes precedence over internal Keycloak
+    enabled: false
+    
+    # OpenID Connect issuer URL (required when external.enabled: true)
+    # This is the base URL of your OIDC provider
+    # Examples:
+    #   - Auth0: https://yourdomain.auth0.com
+    #   - Okta: https://yourorg.okta.com/oauth2/default
+    #   - Azure AD: https://login.microsoftonline.com/{tenant-id}/v2.0
+    #   - Google: https://accounts.google.com
+    #   - Keycloak: https://keycloak.example.com/realms/myrealm
+    issuer: ""
+    
+    # OIDC client ID for OpenCloud (required when external.enabled: true)
+    # This is the client/application ID registered with your OIDC provider
+    clientId: ""
+    
+    # OIDC account management URL (optional)
+    # URL where users can manage their profile, password, MFA, etc.
+    # If not set, the account management link will not be displayed
+    # Examples:
+    #   - Keycloak: https://keycloak.example.com/realms/myrealm/account
+    #   - Auth0: https://yourdomain.auth0.com/account
+    accountUrl: ""
+
+# =====================================================================
+# UTILITY IMAGES
+# =====================================================================
+
+# Busybox image settings (used for init containers)
+busybox:
+  image:
+    # Busybox image registry
+    registry: docker.io
+    # Busybox image repository
+    repository: library/busybox
+    # Busybox image tag
+    tag: "1.36"
+    # Image pull policy
+    pullPolicy: IfNotPresent
+
+# =====================================================================
+# POSTGRESQL (for Keycloak)
+# =====================================================================
 
 # PostgreSQL settings for Keycloak
 postgres:
@@ -531,6 +521,7 @@ opencloud:
         # Use TLS between proxy and OpenCloud services
         tls: false
         # Enable basic authentication
+        # Note: Automatically disabled when OIDC is enabled
         enableBasicAuth: false
         # Auto-provision user accounts from OIDC
         autoprovisionAccounts: true

@@ -215,7 +215,7 @@ Generate common environment variables for OpenCloud
 {{- if .Values.opencloud.nats.external.enabled }}
   {{- $exclude = append $exclude "nats" }}
 {{- end }}
-{{- $useExternalAuth := or .Values.global.oidc.enabled .Values.keycloak.internal.enabled }}
+{{- $useExternalAuth := or .Values.identityProvider.external.enabled .Values.identityProvider.internal.enabled }}
 {{- if $useExternalAuth }}
   {{- $exclude = append $exclude "idp" }}
 {{- end }}
@@ -228,7 +228,7 @@ Generate common environment variables for OpenCloud
 - name: PROXY_TLS
   value: {{ .Values.opencloud.config.env.proxy.tls | quote }}
 - name: PROXY_ENABLE_BASIC_AUTH
-  {{- $oidcEnabled := or .Values.global.oidc.enabled .Values.keycloak.internal.enabled }}
+  {{- $oidcEnabled := or .Values.identityProvider.external.enabled .Values.identityProvider.internal.enabled }}
   {{- if $oidcEnabled }}
   value: "false"
   {{- else }}
@@ -322,9 +322,9 @@ Supports both external OIDC providers and internal Keycloak deployment
 External OIDC takes precedence over internal Keycloak
 */}}
 {{- define "opencloud.env.oidc" -}}
-{{- $oidcEnabled := or .Values.global.oidc.enabled .Values.keycloak.internal.enabled }}
+{{- $oidcEnabled := or .Values.identityProvider.external.enabled .Values.identityProvider.internal.enabled }}
 {{- if $oidcEnabled }}
-{{- $useExternalOidc := .Values.global.oidc.enabled }}
+{{- $useExternalOidc := .Values.identityProvider.external.enabled }}
 
 # IDP specific configuration
 - name: PROXY_AUTOPROVISION_ACCOUNTS
@@ -340,17 +340,17 @@ External OIDC takes precedence over internal Keycloak
 # OIDC Issuer URL
 - name: OC_OIDC_ISSUER
   {{- if $useExternalOidc }}
-  value: {{ required "global.oidc.issuer is required when global.oidc.enabled is true" .Values.global.oidc.issuer | quote }}
+  value: {{ required "identityProvider.external.issuer is required when identityProvider.external.enabled is true" .Values.identityProvider.external.issuer | quote }}
   {{- else }}
-  value: {{ printf "https://%s/realms/%s" (include "opencloud.keycloak.domain" .) .Values.keycloak.internal.realm | quote }}
+  value: {{ printf "https://%s/realms/%s" (include "opencloud.keycloak.domain" .) .Values.identityProvider.internal.realm | quote }}
   {{- end }}
 
 # Account management URL
 - name: WEB_OPTION_ACCOUNT_EDIT_LINK_HREF
   {{- if $useExternalOidc }}
-  value: {{ .Values.global.oidc.accountUrl | default "" | quote }}
+  value: {{ .Values.identityProvider.external.accountUrl | default "" | quote }}
   {{- else }}
-  value: {{ printf "https://%s/realms/%s/account" (include "opencloud.keycloak.domain" .) .Values.keycloak.internal.realm | quote }}
+  value: {{ printf "https://%s/realms/%s/account" (include "opencloud.keycloak.domain" .) .Values.identityProvider.internal.realm | quote }}
   {{- end }}
 
 - name: PROXY_OIDC_REWRITE_WELLKNOWN
@@ -359,18 +359,14 @@ External OIDC takes precedence over internal Keycloak
 # OIDC Client ID
 - name: WEB_OIDC_CLIENT_ID
   {{- if $useExternalOidc }}
-  value: {{ required "global.oidc.clientId is required when global.oidc.enabled is true" .Values.global.oidc.clientId | quote }}
+  value: {{ required "identityProvider.external.clientId is required when identityProvider.external.enabled is true" .Values.identityProvider.external.clientId | quote }}
   {{- else }}
   value: "web"
   {{- end }}
 
 # User identification claims
 - name: PROXY_USER_OIDC_CLAIM
-  {{- if $useExternalOidc }}
-  value: {{ default .Values.opencloud.config.env.proxy.oidc.userOidcClaim .Values.global.oidc.userClaim | quote }}
-  {{- else }}
   value: {{ .Values.opencloud.config.env.proxy.oidc.userOidcClaim | quote }}
-  {{- end }}
 
 - name: PROXY_USER_CS3_CLAIM
   value: {{ .Values.opencloud.config.env.proxy.oidc.userCs3Claim | quote }}
@@ -386,11 +382,7 @@ External OIDC takes precedence over internal Keycloak
 
 # Role assignment claim
 - name: PROXY_ROLE_ASSIGNMENT_OIDC_CLAIM
-  {{- if $useExternalOidc }}
-  value: {{ default .Values.opencloud.config.env.proxy.oidc.roleAssignmentClaim .Values.global.oidc.roleClaim | quote }}
-  {{- else }}
   value: {{ .Values.opencloud.config.env.proxy.oidc.roleAssignmentClaim | quote }}
-  {{- end }}
 
 - name: PROXY_OIDC_ACCESS_TOKEN_VERIFY_METHOD
   value: {{ .Values.opencloud.config.env.proxy.oidc.accessTokenVerifyMethod | quote }}
@@ -398,18 +390,14 @@ External OIDC takes precedence over internal Keycloak
 # OIDC metadata/discovery URL
 - name: WEB_OIDC_METADATA_URL
   {{- if $useExternalOidc }}
-  value: {{ printf "%s/.well-known/openid-configuration" .Values.global.oidc.issuer | quote }}
+  value: {{ printf "%s/.well-known/openid-configuration" .Values.identityProvider.external.issuer | quote }}
   {{- else }}
-  value: {{ printf "https://%s/realms/%s/.well-known/openid-configuration" (include "opencloud.keycloak.domain" .) .Values.keycloak.internal.realm | quote }}
+  value: {{ printf "https://%s/realms/%s/.well-known/openid-configuration" (include "opencloud.keycloak.domain" .) .Values.identityProvider.internal.realm | quote }}
   {{- end }}
 
 # OIDC scopes
 - name: WEB_OIDC_SCOPE
-  {{- if $useExternalOidc }}
-  value: {{ default .Values.opencloud.config.env.web.oidcScope .Values.global.oidc.scopes | quote }}
-  {{- else }}
   value: {{ .Values.opencloud.config.env.web.oidcScope | quote }}
-  {{- end }}
 {{- end }}
 {{- end -}}
 
