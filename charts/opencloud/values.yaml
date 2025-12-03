@@ -588,6 +588,8 @@ opencloud:
       # Search configuration
       search:
         # Extractor type (tika, basic)
+        # Note: If set to "tika" but tika.enabled is false, will automatically fall back to "basic"
+        # This prevents service startup failures when Tika is not available
         extractorType: "tika"
       
       # gRPC performance settings

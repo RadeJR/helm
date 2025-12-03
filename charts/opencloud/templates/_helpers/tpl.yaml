@@ -254,9 +254,15 @@ Generate common environment variables for OpenCloud
 
 # Search settings
 - name: SEARCH_EXTRACTOR_TYPE
+{{- if and (eq .Values.opencloud.config.env.search.extractorType "tika") (not .Values.tika.enabled) }}
+  value: "basic"
+{{- else }}
   value: {{ .Values.opencloud.config.env.search.extractorType | quote }}
+{{- end }}
+{{- if .Values.tika.enabled }}
 - name: SEARCH_EXTRACTOR_TIKA_TIKA_URL
   value: "http://{{ include "opencloud.tika.fullname" . }}:9998"
+{{- end }}
 
 # Performance settings
 - name: OC_GRPC_MAX_RECEIVED_MESSAGE_SIZE
