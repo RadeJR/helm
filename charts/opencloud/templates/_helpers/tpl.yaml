@@ -246,10 +246,6 @@ Generate common environment variables for OpenCloud
   value: {{ .Values.opencloud.config.env.proxy.enableBasicAuth | quote }}
   {{- end }}
 
-# Gateway settings
-- name: GATEWAY_GRPC_ADDR
-  value: {{ .Values.opencloud.config.env.gateway.grpcAddr | quote }}
-
 # INSECURE: needed if OpenCloud is using self generated certificates
 - name: OC_INSECURE
   value: {{ tpl (toString .Values.opencloud.config.env.insecure) . | quote }}

@@ -583,11 +583,6 @@ opencloud:
         # Filename of banned passwords list (relative to /etc/opencloud)
         bannedPasswordsFile: "banned-password-list.txt"
       
-      # Gateway configuration
-      gateway:
-        # Gateway gRPC address (makes REVA gateway accessible to app drivers)
-        grpcAddr: "0.0.0.0:9142"
-      
       # Search configuration
       search:
         # Extractor type (tika, basic)
