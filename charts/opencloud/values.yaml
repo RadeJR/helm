@@ -617,9 +617,28 @@ opencloud:
       appRegistry: {}
       
       # CSP (Content Security Policy) configuration
-      # Leave empty to use default from files/opencloud/csp.yaml.gotmpl
-      # The default template includes dynamic values for domains
+      # Allows extending default CSP directives with additional sources.
+      # The chart automatically includes required domains (OnlyOffice, Collabora, identity provider).
+      # Add custom sources to specific directives without overriding the entire CSP.
+      # All values should be properly formatted CSP source expressions (e.g., 'https://example.com', '''self''').
+      # Example:
       csp: {}
+        # # Add custom domains to connect-src (for API calls, WebSocket connections)
+        # connectSrc:
+        #   - 'https://api.external-service.com'
+        #   - 'wss://websocket.external-service.com'
+        # 
+        # # Add custom domains to frame-src (for embedding iframes)
+        # frameSrc:
+        #   - 'https://embed.external-service.com'
+        # 
+        # # Add custom image sources to img-src
+        # imgSrc:
+        #   - 'https://cdn.external-service.com'
+        # 
+        # # Other available directives (all optional):
+        # # childSrc, defaultSrc, fontSrc, frameAncestors, manifestSrc,
+        # # mediaSrc, objectSrc, scriptSrc, styleSrc, workerSrc
       
       # Proxy configuration (advanced)
       # Leave empty for default configuration

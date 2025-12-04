@@ -1,6 +1,16 @@
+{{- /*
+CSP (Content Security Policy) Configuration
+This template generates the CSP configuration with defaults and allows users to extend specific directives.
+Users can add custom sources to directives via .Values.opencloud.config.files.csp without overriding defaults.
+*/ -}}
 directives:
   child-src:
     - '''self'''
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .childSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   connect-src:
     - '''self'''
     - 'blob:'
@@ -16,41 +26,114 @@ directives:
     {{- end }}
     {{- end }}
     {{- end }}
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .connectSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   default-src:
     - '''none'''
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .defaultSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   font-src:
     - '''self'''
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .fontSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   frame-ancestors:
     - '''self'''
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .frameAncestors }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   frame-src:
     - '''self'''
     - 'blob:'
+    {{- if .Values.webExtensions.enabled }}
+    {{- if .Values.webExtensions.extensions.drawio.enabled }}
     - 'https://embed.diagrams.net/'
-    # In contrary to bash and docker the default is given after the | character
-    - 'https://{{ .Values.global.domain.onlyoffice }}/'
-    - 'https://{{ .Values.global.domain.collabora }}/'
+    {{- end }}
     # This is needed for the external-sites web extension when embedding sites
+    {{- if .Values.webExtensions.extensions.externalsites.enabled }}
     - 'https://docs.opencloud.eu'
+    {{- end }}
+    {{- end }}
+    {{- if .Values.onlyoffice.enabled }}
+    - 'https://{{ .Values.global.domain.onlyoffice }}/'
+    {{- end }}
+    {{- if .Values.collabora.enabled }}
+    - 'https://{{ .Values.global.domain.collabora }}/'
+    {{- end }}
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .frameSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   img-src:
     - '''self'''
     - 'data:'
     - 'blob:'
     - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
-    # In contrary to bash and docker the default is given after the | character
+    {{- if .Values.onlyoffice.enabled }}
     - 'https://{{ .Values.global.domain.onlyoffice }}/'
+    {{- end }}
+    {{- if .Values.collabora.enabled }}
     - 'https://{{ .Values.global.domain.collabora }}/'
+    {{- end }}
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .imgSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   manifest-src:
     - '''self'''
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .manifestSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   media-src:
     - '''self'''
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .mediaSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   object-src:
     - '''self'''
     - 'blob:'
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .objectSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   script-src:
     - '''self'''
     - '''unsafe-inline'''
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .scriptSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   style-src:
     - '''self'''
     - '''unsafe-inline'''
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .styleSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
   worker-src:
     - '''self'''
+    {{- with .Values.opencloud.config.files.csp }}
+    {{- range .workerSrc }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
+
