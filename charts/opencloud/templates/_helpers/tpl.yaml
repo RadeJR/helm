@@ -448,8 +448,6 @@ Generate NATS environment variables
   value: {{ .Values.opencloud.nats.external.cluster | quote }}
 - name: OC_EVENTS_ENABLE_TLS
   value: {{ .Values.opencloud.nats.external.tls.enabled | quote }}
-- name: OC_EVENTS_TLS_INSECURE
-  value: {{ .Values.opencloud.nats.external.tls.insecure | quote }}
 {{- if not .Values.opencloud.nats.external.tls.certTrusted }}
 - name: OC_EVENTS_TLS_ROOT_CA_CERTIFICATE
   value: /etc/opencloud/nats-ca/ca.crt
