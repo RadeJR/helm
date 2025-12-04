@@ -9,12 +9,22 @@ To learn more about the release, try:
 
 IMPORTANT: This is a development deployment. For production use, you MUST change the following default credentials:
 
+{{- if .Values.identityProvider.internal.enabled }}
 1. Keycloak Admin: adminUser: admin, adminPassword: admin
-2. OpenCloud Admin: adminPassword: admin
-3. PostgreSQL: user: keycloak, password: keycloak
-4. MinIO: rootUser: opencloud, rootPassword: opencloud-secret-key
-5. OnlyOffice Database: sql.dbUser: onlyoffice, sql.dbPass: onlyoffice
-6. RabbitMQ: url: amqp://guest:guest@localhost
+2. PostgreSQL: user: keycloak, password: keycloak
+3. MinIO: rootUser: opencloud, rootPassword: opencloud-secret-key
+4. OnlyOffice Database: sql.dbUser: onlyoffice, sql.dbPass: onlyoffice
+5. RabbitMQ: url: amqp://guest:guest@localhost
+{{- else if not .Values.identityProvider.external.enabled }}
+1. OpenCloud Admin: adminPassword: admin (local auth - no identity provider configured)
+2. MinIO: rootUser: opencloud, rootPassword: opencloud-secret-key
+3. OnlyOffice Database: sql.dbUser: onlyoffice, sql.dbPass: onlyoffice
+4. RabbitMQ: url: amqp://guest:guest@localhost
+{{- else }}
+1. MinIO: rootUser: opencloud, rootPassword: opencloud-secret-key
+2. OnlyOffice Database: sql.dbUser: onlyoffice, sql.dbPass: onlyoffice
+3. RabbitMQ: url: amqp://guest:guest@localhost
+{{- end }}
 
 Using default credentials in production environments poses significant security risks.
 

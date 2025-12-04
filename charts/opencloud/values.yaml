@@ -467,13 +467,21 @@ opencloud:
     name: ""
   
   # Use existing secret for opencloud admin credentials (Note: secretKeyName must be adminPassword)
+  # Only used when no identity provider is configured
   existingSecret: ""
   
-  # Admin password
+  # Admin password for the built-in admin user
+  # NOTE: This is IGNORED when any identity provider is configured (internal Keycloak or external OIDC)
+  # When using an identity provider, admin authentication is handled by the IDP
+  # Only used for local admin authentication when both identityProvider.internal.enabled 
+  # and identityProvider.external.enabled are false
   # ignored if opencloud.existingSecret is set
   adminPassword: admin
   
-  # Create demo users
+  # Create demo users in the local identity management system
+  # NOTE: This is IGNORED when any identity provider is configured (internal Keycloak or external OIDC)
+  # When using an identity provider, users are managed by the IDP, not locally
+  # Only used when both identityProvider.internal.enabled and identityProvider.external.enabled are false
   createDemoUsers: false
   # Additional services to start
   additionalServices: []

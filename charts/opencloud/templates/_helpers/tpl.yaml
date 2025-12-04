@@ -423,7 +423,8 @@ External OIDC takes precedence over internal Keycloak
 Generate admin and demo user environment variables
 */}}
 {{- define "opencloud.env.admin" -}}
-# Admin user password
+{{- if not (or .Values.identityProvider.internal.enabled .Values.identityProvider.external.enabled) }}
+# Admin user password (only used when no identity provider is configured)
 - name: IDM_ADMIN_PASSWORD
   valueFrom:
     secretKeyRef:
@@ -433,9 +434,12 @@ Generate admin and demo user environment variables
               {{ include "opencloud.opencloud.fullname" . }}
             {{- end }}
       key: adminPassword
-# Demo users
+{{- end }}
+# Demo users (only created when no identity provider is configured)
+{{- if not (or .Values.identityProvider.internal.enabled .Values.identityProvider.external.enabled) }}
 - name: IDM_CREATE_DEMO_USERS
   value: {{ .Values.opencloud.createDemoUsers | quote }}
+{{- end }}
 {{- end -}}
 
 {{/*
