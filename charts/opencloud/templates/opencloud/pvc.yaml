@@ -41,7 +41,7 @@ spec:
   {{- end }}
 {{- end }}
 
-{{- if and (eq .Values.opencloud.storage.mode "posixfs") (and .Values.opencloud.storage.posixfs.persistence.enabled (not .Values.opencloud.storage.posixfs.persistence.existingClaim)) }}
+{{- if and .Values.storage.posixfs.persistence.enabled (not .Values.storage.posixfs.persistence.existingClaim) }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -54,11 +54,11 @@ metadata:
     app.kubernetes.io/component: opencloud
 spec:
   accessModes:
-    - {{ .Values.opencloud.storage.posixfs.persistence.accessMode | quote }}
+    - {{ .Values.storage.posixfs.persistence.accessMode | quote }}
   resources:
     requests:
-      storage: {{ .Values.opencloud.storage.posixfs.persistence.size | quote }}
-  {{- with include "opencloud.storageClass" (dict "local" .Values.opencloud.storage.posixfs.persistence.storageClass "global" .Values.global.storage.storageClass) }}
+      storage: {{ .Values.storage.posixfs.persistence.size | quote }}
+  {{- with include "opencloud.storageClass" (dict "local" .Values.storage.posixfs.persistence.storageClass "global" .Values.global.storage.storageClass) }}
   storageClassName: {{ . | quote }}
   {{- end }}
 {{- end }}

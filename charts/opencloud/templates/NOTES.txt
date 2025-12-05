@@ -9,21 +9,74 @@ To learn more about the release, try:
 
 IMPORTANT: This is a development deployment. For production use, you MUST change the following default credentials:
 
-{{- if .Values.identityProvider.internal.enabled }}
-1. Keycloak Admin: adminUser: admin, adminPassword: admin
-2. PostgreSQL: user: keycloak, password: keycloak
-3. MinIO: rootUser: opencloud, rootPassword: opencloud-secret-key
-4. OnlyOffice Database: sql.dbUser: onlyoffice, sql.dbPass: onlyoffice
-5. RabbitMQ: url: amqp://guest:guest@localhost
+{{- if .Values.identityProvider.keycloak.enabled }}
+{{- $keycloakSecret := lookup "v1" "Secret" .Release.Namespace (include "opencloud.keycloak.fullname" .) }}
+{{- $postgresSecret := lookup "v1" "Secret" .Release.Namespace (include "opencloud.postgres.fullname" .) }}
+{{- if and (not .Values.identityProvider.keycloak.adminPassword) (not .Values.identityProvider.keycloak.existingSecret) }}
+1. Keycloak Admin: adminUser: {{ .Values.identityProvider.keycloak.adminUser }}, adminPassword: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.keycloak.fullname" . }} -o jsonpath='{.data.adminPassword}' | base64 -d>
+{{- else }}
+1. Keycloak Admin: adminUser: {{ .Values.identityProvider.keycloak.adminUser }}, adminPassword: {{ .Values.identityProvider.keycloak.adminPassword | default "<using existing secret>" }}
+{{- end }}
+{{- if and (not .Values.identityProvider.keycloak.postgres.password) (not .Values.identityProvider.keycloak.postgres.existingSecret) }}
+2. PostgreSQL: user: {{ .Values.identityProvider.keycloak.postgres.user }}, password: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.postgres.fullname" . }} -o jsonpath='{.data.password}' | base64 -d>
+{{- else }}
+2. PostgreSQL: user: {{ .Values.identityProvider.keycloak.postgres.user }}, password: {{ .Values.identityProvider.keycloak.postgres.password | default "<using existing secret>" }}
+{{- end }}
+{{- if .Values.storage.internal.enabled }}
+{{- if and (not .Values.storage.internal.rootPassword) (not .Values.storage.internal.existingSecret) }}
+3. MinIO: rootUser: {{ .Values.storage.internal.rootUser }}, rootPassword: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.minio.fullname" . }} -o jsonpath='{.data.rootPassword}' | base64 -d>
+{{- else }}
+3. MinIO: rootUser: {{ .Values.storage.internal.rootUser }}, rootPassword: {{ .Values.storage.internal.rootPassword | default "<using existing secret>" }}
+{{- end }}
+{{- end }}
+{{- if .Values.collabora.enabled }}
+{{- if and (not .Values.collabora.admin.password) (not .Values.collabora.existingSecret) }}
+4. Collabora: username: {{ .Values.collabora.admin.username }}, password: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.fullname" . }}-collabora -o jsonpath='{.data.password}' | base64 -d>
+{{- else }}
+4. Collabora: username: {{ .Values.collabora.admin.username }}, password: {{ .Values.collabora.admin.password | default "<using existing secret>" }}
+{{- end }}
+{{- end }}
+5. OnlyOffice Database: sql.dbUser: onlyoffice, sql.dbPass: onlyoffice
+6. RabbitMQ: url: amqp://guest:guest@localhost
 {{- else if not .Values.identityProvider.external.enabled }}
-1. OpenCloud Admin: adminPassword: admin (local auth - no identity provider configured)
-2. MinIO: rootUser: opencloud, rootPassword: opencloud-secret-key
+{{- if and (not .Values.identityProvider.internal.adminPassword) (not .Values.identityProvider.internal.existingSecret) }}
+1. OpenCloud Admin: adminPassword: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.opencloud.fullname" . }} -o jsonpath='{.data.adminPassword}' | base64 -d> (local auth - no identity provider configured)
+{{- else }}
+1. OpenCloud Admin: adminPassword: {{ .Values.identityProvider.internal.adminPassword | default "<using existing secret>" }} (local auth - no identity provider configured)
+{{- end }}
+{{- if .Values.storage.internal.enabled }}
+{{- if and (not .Values.storage.internal.rootPassword) (not .Values.storage.internal.existingSecret) }}
+2. MinIO: rootUser: {{ .Values.storage.internal.rootUser }}, rootPassword: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.minio.fullname" . }} -o jsonpath='{.data.rootPassword}' | base64 -d>
+{{- else }}
+2. MinIO: rootUser: {{ .Values.storage.internal.rootUser }}, rootPassword: {{ .Values.storage.internal.rootPassword | default "<using existing secret>" }}
+{{- end }}
+{{- end }}
+{{- if .Values.collabora.enabled }}
+{{- if and (not .Values.collabora.admin.password) (not .Values.collabora.existingSecret) }}
+4. Collabora: username: {{ .Values.collabora.admin.username }}, password: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.fullname" . }}-collabora -o jsonpath='{.data.password}' | base64 -d>
+{{- else }}
+4. Collabora: username: {{ .Values.collabora.admin.username }}, password: {{ .Values.collabora.admin.password | default "<using existing secret>" }}
+{{- end }}
+{{- end }}
+5. OnlyOffice Database: sql.dbUser: onlyoffice, sql.dbPass: onlyoffice
+6. RabbitMQ: url: amqp://guest:guest@localhost
+{{- else }}
+{{- if .Values.storage.internal.enabled }}
+{{- if and (not .Values.storage.internal.rootPassword) (not .Values.storage.internal.existingSecret) }}
+1. MinIO: rootUser: {{ .Values.storage.internal.rootUser }}, rootPassword: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.minio.fullname" . }} -o jsonpath='{.data.rootPassword}' | base64 -d>
+{{- else }}
+1. MinIO: rootUser: {{ .Values.storage.internal.rootUser }}, rootPassword: {{ .Values.storage.internal.rootPassword | default "<using existing secret>" }}
+{{- end }}
+{{- end }}
+{{- if .Values.collabora.enabled }}
+{{- if and (not .Values.collabora.admin.password) (not .Values.collabora.existingSecret) }}
+2. Collabora: username: {{ .Values.collabora.admin.username }}, password: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.fullname" . }}-collabora -o jsonpath='{.data.password}' | base64 -d>
+{{- else }}
+2. Collabora: username: {{ .Values.collabora.admin.username }}, password: {{ .Values.collabora.admin.password | default "<using existing secret>" }}
+{{- end }}
+{{- end }}
 3. OnlyOffice Database: sql.dbUser: onlyoffice, sql.dbPass: onlyoffice
 4. RabbitMQ: url: amqp://guest:guest@localhost
-{{- else }}
-1. MinIO: rootUser: opencloud, rootPassword: opencloud-secret-key
-2. OnlyOffice Database: sql.dbUser: onlyoffice, sql.dbPass: onlyoffice
-3. RabbitMQ: url: amqp://guest:guest@localhost
 {{- end }}
 
 Using default credentials in production environments poses significant security risks.
@@ -35,24 +88,32 @@ The following services have been deployed:
    - Port: 9200
    - Storage Driver: decomposeds3
    - System Storage Driver: decomposed
-   - S3 Storage: {{ if .Values.opencloud.storage.s3.external.enabled }}{{ .Values.opencloud.storage.s3.external.endpoint }}{{ else if .Values.opencloud.storage.s3.internal.enabled }}MinIO ({{ include "opencloud.minio.fullname" . }}){{ else }}Not configured{{ end }}
-   - S3 Bucket: {{ if .Values.opencloud.storage.s3.external.enabled }}{{ .Values.opencloud.storage.s3.external.bucket }}{{ else if .Values.opencloud.storage.s3.internal.enabled }}{{ .Values.opencloud.storage.s3.internal.bucketName }}{{ else }}Not configured{{ end }}
+   - S3 Storage: {{ if .Values.storage.external.enabled }}{{ .Values.storage.external.endpoint }}{{ else if .Values.storage.internal.enabled }}MinIO ({{ include "opencloud.minio.fullname" . }}){{ else }}Not configured{{ end }}
+   - S3 Bucket: {{ if .Values.storage.external.enabled }}{{ .Values.storage.external.bucket }}{{ else if .Values.storage.internal.enabled }}{{ .Values.storage.internal.bucketName }}{{ else }}Not configured{{ end }}
 
-{{- if .Values.identityProvider.internal.enabled }}
+{{- if .Values.identityProvider.keycloak.enabled }}
 2. Keycloak (Authentication):
    - Service: {{ include "opencloud.keycloak.fullname" . }}
    - Port: 8080
-   - Username: {{ .Values.identityProvider.internal.adminUser }}
-   - Password: {{ .Values.identityProvider.internal.adminPassword }}
+   - Username: {{ .Values.identityProvider.keycloak.adminUser }}
+{{- if and (not .Values.identityProvider.keycloak.adminPassword) (not .Values.identityProvider.keycloak.existingSecret) }}
+   - Password: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.keycloak.fullname" . }} -o jsonpath='{.data.adminPassword}' | base64 -d>
+{{- else }}
+   - Password: {{ .Values.identityProvider.keycloak.adminPassword | default "<using existing secret>" }}
+{{- end }}
 {{- end }}
 
-{{- if .Values.opencloud.storage.s3.internal.enabled }}
+{{- if .Values.storage.internal.enabled }}
 3. MinIO (Object Storage):
    - Service: {{ include "opencloud.minio.fullname" . }}
    - API Port: 9000
    - Console Port: 9001
-   - Username: {{ .Values.opencloud.storage.s3.internal.rootUser }}
-   - Password: {{ .Values.opencloud.storage.s3.internal.rootPassword }}
+   - Username: {{ .Values.storage.internal.rootUser }}
+{{- if and (not .Values.storage.internal.rootPassword) (not .Values.storage.internal.existingSecret) }}
+   - Password: <randomly generated - retrieve with: kubectl get secret {{ include "opencloud.minio.fullname" . }} -o jsonpath='{.data.rootPassword}' | base64 -d>
+{{- else }}
+   - Password: {{ .Values.storage.internal.rootPassword | default "<using existing secret>" }}
+{{- end }}
 {{- end }}
 
 {{- if and .Values.onlyoffice.collaboration.enabled .Values.onlyoffice.enabled }}
@@ -70,10 +131,10 @@ All HTTPRoutes are configured to use the Gateway named "{{ .Values.httpRoute.gat
 
 Make sure the Gateway exists and is properly configured to accept traffic for the following domains:
 - OpenCloud: {{ include "opencloud.domain" . }} (Service: {{ include "opencloud.opencloud.fullname" . }}, Port: 9200)
-{{- if .Values.identityProvider.internal.enabled }}
+{{- if .Values.identityProvider.keycloak.enabled }}
 - Keycloak: {{ include "opencloud.keycloak.domain" . }} (Service: {{ include "opencloud.keycloak.fullname" . }}, Port: 8080)
 {{- end }}
-{{- if .Values.opencloud.storage.s3.internal.enabled }}
+{{- if .Values.storage.internal.enabled }}
 - MinIO Console: {{ include "opencloud.minio.domain" . }} (Service: {{ include "opencloud.minio.fullname" . }}, Port: 9001)
 {{- end }}
 {{- if and .Values.onlyoffice.collaboration.enabled .Values.onlyoffice.enabled }}
@@ -86,10 +147,10 @@ to expose these services externally.
 
 Example domains for your ingress configuration:
 - OpenCloud: {{ include "opencloud.domain" . }} (Service: {{ include "opencloud.opencloud.fullname" . }}, Port: 9200)
-{{- if .Values.identityProvider.internal.enabled }}
+{{- if .Values.identityProvider.keycloak.enabled }}
 - Keycloak: {{ include "opencloud.keycloak.domain" . }} (Service: {{ include "opencloud.keycloak.fullname" . }}, Port: 8080)
 {{- end }}
-{{- if .Values.opencloud.storage.s3.internal.enabled }}
+{{- if .Values.storage.internal.enabled }}
 - MinIO Console: {{ include "opencloud.minio.domain" . }} (Service: {{ include "opencloud.minio.fullname" . }}, Port: 9001)
 {{- end }}
 {{- if and .Values.onlyoffice.collaboration.enabled .Values.onlyoffice.enabled }}

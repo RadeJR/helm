@@ -1,12 +1,12 @@
 {{- /*
 CSP (Content Security Policy) Configuration
 This template generates the CSP configuration with defaults and allows users to extend specific directives.
-Users can add custom sources to directives via .Values.opencloud.config.files.csp without overriding defaults.
+Users can add custom sources to directives via .Values.opencloud.config.csp without overriding defaults.
 */ -}}
 directives:
   child-src:
     - '''self'''
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .childSrc }}
     - {{ . | quote }}
     {{- end }}
@@ -15,7 +15,7 @@ directives:
     - '''self'''
     - 'blob:'
     - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
-    {{- if .Values.identityProvider.internal.enabled }}
+    {{- if .Values.identityProvider.keycloak.enabled }}
     - 'https://{{ .Values.global.domain.keycloak }}/'
     {{- else if .Values.identityProvider.external.enabled }}
     {{- if .Values.identityProvider.external.issuer }}
@@ -26,28 +26,28 @@ directives:
     {{- end }}
     {{- end }}
     {{- end }}
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .connectSrc }}
     - {{ . | quote }}
     {{- end }}
     {{- end }}
   default-src:
     - '''none'''
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .defaultSrc }}
     - {{ . | quote }}
     {{- end }}
     {{- end }}
   font-src:
     - '''self'''
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .fontSrc }}
     - {{ . | quote }}
     {{- end }}
     {{- end }}
   frame-ancestors:
     - '''self'''
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .frameAncestors }}
     - {{ . | quote }}
     {{- end }}
@@ -70,7 +70,7 @@ directives:
     {{- if .Values.collabora.enabled }}
     - 'https://{{ .Values.global.domain.collabora }}/'
     {{- end }}
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .frameSrc }}
     - {{ . | quote }}
     {{- end }}
@@ -86,21 +86,21 @@ directives:
     {{- if .Values.collabora.enabled }}
     - 'https://{{ .Values.global.domain.collabora }}/'
     {{- end }}
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .imgSrc }}
     - {{ . | quote }}
     {{- end }}
     {{- end }}
   manifest-src:
     - '''self'''
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .manifestSrc }}
     - {{ . | quote }}
     {{- end }}
     {{- end }}
   media-src:
     - '''self'''
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .mediaSrc }}
     - {{ . | quote }}
     {{- end }}
@@ -108,7 +108,7 @@ directives:
   object-src:
     - '''self'''
     - 'blob:'
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .objectSrc }}
     - {{ . | quote }}
     {{- end }}
@@ -116,7 +116,7 @@ directives:
   script-src:
     - '''self'''
     - '''unsafe-inline'''
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .scriptSrc }}
     - {{ . | quote }}
     {{- end }}
@@ -124,14 +124,14 @@ directives:
   style-src:
     - '''self'''
     - '''unsafe-inline'''
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .styleSrc }}
     - {{ . | quote }}
     {{- end }}
     {{- end }}
   worker-src:
     - '''self'''
-    {{- with .Values.opencloud.config.files.csp }}
+    {{- with .Values.opencloud.config.csp }}
     {{- range .workerSrc }}
     - {{ . | quote }}
     {{- end }}

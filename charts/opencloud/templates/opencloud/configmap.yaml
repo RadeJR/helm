@@ -9,32 +9,38 @@ metadata:
 data:
   # App registry configuration
   app-registry.yaml: |-
-{{- if empty .Values.opencloud.config.files.appRegistry -}}
+{{- if empty .Values.opencloud.config.appRegistry -}}
 {{ .Files.Get "files/opencloud/app-registry.yaml" | nindent 4 }}
 {{- else -}}
-{{ toYaml (dict "app_registry" .Values.opencloud.config.files.appRegistry) | nindent 4 }}
+{{ toYaml (dict "app_registry" .Values.opencloud.config.appRegistry) | nindent 4 }}
 {{- end }}
 
   # CSP configuration
   csp.yaml: |-
-{{- if empty .Values.opencloud.config.files.csp -}}
+{{- if empty .Values.opencloud.config.csp -}}
 {{ tpl (.Files.Get "files/opencloud/csp.yaml.gotmpl") . | nindent 4 }}
 {{- else -}}
-{{ .Values.opencloud.config.files.csp | nindent 4 }}
+{{ .Values.opencloud.config.csp | nindent 4 }}
 {{- end }}
 
   # Proxy configuration
   proxy.yaml: |-
-{{- if .Values.opencloud.config.files.proxy -}}
-{{ toYaml .Values.opencloud.config.files.proxy | nindent 4 }}
+{{- if .Values.opencloud.config.proxy.roleMappings -}}
+    role_assignment:
+      oidc_role_mapper:
+        role_mapping:
+{{- range .Values.opencloud.config.proxy.roleMappings }}
+          - role_name: {{ .roleName }}
+            claim_value: {{ .claimValue }}
+{{- end }}
 {{- end }}
 
   # Banned password list
   banned-password-list.txt: |-
-{{- if empty .Values.opencloud.config.files.bannedPasswordList -}}
+{{- if empty .Values.opencloud.config.passwordPolicy.bannedPasswordList -}}
 {{- .Files.Get "files/opencloud/banned-password-list.txt" | nindent 4 }}
 {{- else -}}
-{{- .Values.opencloud.config.files.bannedPasswordList | nindent 4 }}
+{{- .Values.opencloud.config.passwordPolicy.bannedPasswordList | nindent 4 }}
 {{- end }}
 
   # Search configuration

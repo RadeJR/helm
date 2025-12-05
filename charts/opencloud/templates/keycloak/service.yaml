@@ -1,4 +1,4 @@
-{{- if .Values.identityProvider.internal.enabled }}
+{{- if .Values.identityProvider.keycloak.enabled }}
 apiVersion: v1
 kind: Service
 metadata:

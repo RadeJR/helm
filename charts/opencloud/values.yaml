@@ -5,15 +5,23 @@
 # =====================================================================
 # SECURITY WARNING
 # =====================================================================
-# IMPORTANT: The following default credentials MUST be changed in production environments.
-# Using these default values in production is a significant security risk.
+# IMPORTANT: By default, passwords are randomly generated for better security.
+# If you need to set specific passwords, you can provide them via values or existing secrets.
 #
-# Credentials that need to be changed:
-# 1. Keycloak Admin: adminUser: admin, adminPassword: admin
-# 2. OpenCloud Admin: adminPassword: admin
-# 3. PostgreSQL: user: keycloak, password: keycloak
-# 4. MinIO: rootUser: opencloud, rootPassword: opencloud-secret-key
-# 5. RabbitMQ: url: amqp://guest:guest@localhost
+# Default behavior (recommended):
+# - Keycloak Admin: Random 24-character password (retrieve: kubectl get secret <release>-opencloud-keycloak -o jsonpath='{.data.adminPassword}' | base64 -d)
+# - PostgreSQL: Random 24-character password (retrieve: kubectl get secret <release>-opencloud-postgres -o jsonpath='{.data.password}' | base64 -d)
+# - MinIO: Random 24-character password (retrieve: kubectl get secret <release>-opencloud-minio -o jsonpath='{.data.rootPassword}' | base64 -d)
+# - OpenCloud Built-in IDP Admin: Random 24-character password (retrieve: kubectl get secret <release>-opencloud-opencloud -o jsonpath='{.data.adminPassword}' | base64 -d)
+# - Collabora: Random 24-character password (retrieve: kubectl get secret <release>-opencloud-collabora -o jsonpath='{.data.password}' | base64 -d)
+#
+# To set specific passwords:
+# 1. Keycloak Admin: identityProvider.keycloak.adminPassword (leave empty for random)
+# 2. OpenCloud Built-in IDP Admin: identityProvider.internal.adminPassword (leave empty for random)
+# 3. PostgreSQL: identityProvider.keycloak.postgres.password (leave empty for random)
+# 4. MinIO: storage.internal.rootPassword (leave empty for random)
+# 5. Collabora: collabora.admin.password (leave empty for random)
+# 6. RabbitMQ: url: amqp://guest:guest@localhost (TODO: add random password support)
 
 
 # =====================================================================
@@ -86,12 +94,17 @@ global:
 # =====================================================================
 
 # Identity Provider configuration
-# Choose ONE provider: either internal Keycloak OR external OIDC provider
-# If both are enabled, external OIDC takes precedence
+# OpenCloud has a built-in identity provider, but you can also use Keycloak or external OIDC
+# Choose ONE provider:
+#   1. keycloak - Deploy Keycloak instance managed by this chart
+#   2. external - Connect to external OIDC provider (Auth0, Okta, Azure AD, Google, etc.)
+#   3. (none/both disabled) - Use OpenCloud's built-in identity provider
+# If both keycloak and external are enabled, external OIDC takes precedence
 identityProvider:
-  # Internal Keycloak deployment
-  internal:
-    # Enable internal Keycloak instance
+  # Keycloak deployment
+  # Deploy and manage a Keycloak instance for authentication
+  keycloak:
+    # Enable Keycloak deployment
     enabled: true
     
     # Keycloak image settings
@@ -112,12 +125,13 @@ identityProvider:
     existingSecret: ""
 
     # Admin user
-    # ignored if identityProvider.internal.existingSecret is set
+    # ignored if identityProvider.keycloak.existingSecret is set
     adminUser: admin
 
     # Admin password
-    # ignored if identityProvider.internal.existingSecret is set
-    adminPassword: admin
+    # ignored if identityProvider.keycloak.existingSecret is set
+    # Leave empty to generate a random password
+    adminPassword: ""
 
     # Keycloak realm
     realm: "openCloud"
@@ -160,6 +174,59 @@ identityProvider:
         enabled: false
         # TLS secret name (inherits from global ingress.tls.secretName if empty)
         secretName: ""
+    
+    # PostgreSQL database for Keycloak
+    postgres:
+      # Enable PostgreSQL deployment
+      # Automatically enabled when identityProvider.keycloak.enabled is true
+      enabled: true
+      
+      # PostgreSQL image settings
+      image:
+        # PostgreSQL image registry
+        registry: docker.io
+        # PostgreSQL image repository
+        repository: postgres
+        # PostgreSQL image tag
+        tag: "alpine"
+        # Image pull policy
+        pullPolicy: IfNotPresent
+
+      # Database name
+      database: keycloak
+
+      # Use existing secret for postgres credentials (Note: secretKeyName must be username and password)
+      existingSecret: ""
+
+      # Database user
+      # ignored if postgres.existingSecret is set
+      user: keycloak
+
+      # Database password
+      # ignored if postgres.existingSecret is set
+      # Leave empty to generate a random password
+      password: ""
+
+      # Resources allocation
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      
+      # Persistence configuration
+      persistence:
+        enabled: true
+        # Name of existing PVC to use (overrides all other persistence values)
+        existingClaim: ""
+        # Size of the persistent volume
+        size: 1Gi
+        # Storage class
+        storageClass: ""
+        # Access mode
+        accessMode: ReadWriteOnce
   
   # External OIDC Provider
   external:
@@ -189,78 +256,161 @@ identityProvider:
     #   - Keycloak: https://keycloak.example.com/realms/myrealm/account
     #   - Auth0: https://yourdomain.auth0.com/account
     accountUrl: ""
+  
+  # OpenCloud Built-in Identity Provider
+  # Used when both keycloak and external are disabled
+  internal:
+    # Use existing secret for admin credentials (Note: secretKeyName must be adminPassword)
+    # Only used when both identityProvider.keycloak.enabled and identityProvider.external.enabled are false
+    existingSecret: ""
+    
+    # Admin password for OpenCloud's built-in IDP
+    # Only used when both identityProvider.keycloak.enabled and identityProvider.external.enabled are false
+    # This password is used for local admin authentication
+    # ignored if identityProvider.internal.existingSecret is set
+    # Leave empty to generate a random password
+    adminPassword: ""
+    
+    # Create demo users in the local identity management system
+    # Only used when both identityProvider.keycloak.enabled and identityProvider.external.enabled are false
+    # When using Keycloak or external OIDC, users are managed by the IDP, not locally
+    createDemoUsers: false
+
 
 # =====================================================================
-# UTILITY IMAGES
+# STORAGE
 # =====================================================================
 
-# Busybox image settings (used for init containers)
-busybox:
-  image:
-    # Busybox image registry
-    registry: docker.io
-    # Busybox image repository
-    repository: library/busybox
-    # Busybox image tag
-    tag: "1.36"
-    # Image pull policy
-    pullPolicy: IfNotPresent
-
-# =====================================================================
-# POSTGRESQL (for Keycloak)
-# =====================================================================
-
-# PostgreSQL settings for Keycloak
-postgres:
-  # Enable PostgreSQL
-  # This is only used when identityProvider.internal.enabled is true,
-  # otherwise this is disabled.
-  enabled: true
-  # PostgreSQL image settings
-  image:
-    # PostgreSQL image registry
-    registry: docker.io
-    # PostgreSQL image repository
-    repository: postgres
-    # PostgreSQL image tag
-    tag: "alpine"
-    # Image pull policy
-    pullPolicy: IfNotPresent
-
-  # Database name
-  database: keycloak
-
-  # Use existing secret for postgres credentials (Note: secretKeyName must be username and password)
-  existingSecret: ""
-
-  # Database user
-  # ignored if postgres.existingSecret is set
-  user: keycloak
-
-  # Database password
-  # ignored if postgres.existingSecret is set
-  password: keycloak
-
-  # Resources allocation
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-  # Persistence configuration
-  persistence:
+# Storage configuration for OpenCloud
+# Choose ONE storage backend:
+#   1. internal (MinIO) - S3-compatible object storage deployed by this chart
+#   2. external (S3/Ceph/MinIO) - Connect to external S3-compatible service
+#   3. posixfs - Use filesystem-based storage (requires ReadWriteMany PVC for HA)
+storage:
+  # Internal MinIO deployment
+  internal:
+    # Enable internal MinIO instance
+    # Suitable for development and small deployments
     enabled: true
-    # Name of existing PVC to use (overrides all other persistence values)
-    existingClaim: ""
-    # Size of the persistent volume
-    size: 1Gi
-    # Storage class
-    storageClass: ""
-    # Access mode
-    accessMode: ReadWriteOnce
+    
+    # MinIO image settings
+    image:
+      # MinIO image registry
+      registry: docker.io
+      # MinIO image repository
+      repository: minio/minio
+      # MinIO image tag
+      tag: latest
+      # Image pull policy
+      pullPolicy: IfNotPresent
+    
+    # HTTPRoute configuration
+    httpRoute:
+      # Enable HTTPRoute for MinIO (default: false)
+      enabled: false
+    
+    # Use existing secret for MinIO credentials (Note: secretKeyName must be rootUser and rootPassword)
+    existingSecret: ""
+    
+    # MinIO Root user
+    # ignored if storage.internal.existingSecret is set
+    rootUser: opencloud
 
+    # MinIO Root password
+    # ignored if storage.internal.existingSecret is set
+    # Leave empty to generate a random password
+    rootPassword: ""
+    
+    # Bucket name
+    bucketName: opencloud-bucket
+    
+    # Region (optional)
+    region: "default"
+    
+    # Resources allocation
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+    
+    # Persistence configuration
+    persistence:
+      enabled: true
+      # Name of existing PVC to use (overrides all other persistence values)
+      existingClaim: ""
+      # Size of the persistent volume
+      size: 5Gi
+      # Storage class
+      storageClass: ""
+      # Access mode
+      accessMode: ReadWriteOnce
+  
+  # External S3-compatible storage
+  # Can be AWS S3, Ceph, external MinIO, or any S3-compatible service
+  external:
+    # Enable external S3 storage
+    # When enabled, this takes precedence over internal MinIO
+    enabled: false
+    
+    # S3 endpoint URL
+    # Examples:
+    #   - AWS S3: s3.amazonaws.com (or regional like s3.us-west-2.amazonaws.com)
+    #   - MinIO: minio.example.com:9000
+    #   - Ceph: ceph-rgw.example.com
+    endpoint: ""
+    
+    # S3 region
+    region: "default"
+    
+    # Use existing secret for S3 credentials (Note: secretKeyName must be accessKey and secretKey)
+    existingSecret: ""
+    
+    # S3 access key
+    # ignored if storage.external.existingSecret is set
+    accessKey: ""
+
+    # S3 secret key
+    # ignored if storage.external.existingSecret is set
+    secretKey: ""
+
+    # S3 bucket name
+    bucket: ""
+    
+    # Create bucket if it doesn't exist
+    createBucket: true
+  
+  # POSIX filesystem storage
+  # Use this when you want filesystem-based storage instead of S3
+  # Requires ReadWriteMany PVC for high availability deployments
+  posixfs:
+    # Enable POSIX filesystem storage
+    # When enabled, this takes precedence over S3 (internal or external)
+    enabled: false
+    
+    # The type of the cache store
+    # Supported values: 'memory', 'redis-sentinel', 'nats-js-kv' (default), 'noop'
+    idCacheStore: nats-js-kv
+    
+    # Path of storage root directory
+    # IMPORTANT: Path must be outside /var/lib/opencloud to avoid permission conflicts
+    # See: https://docs.opencloud.eu/docs/admin/configuration/storage/storage-posix/
+    rootPath: "/mnt/posixfs"
+    
+    # Persistence configuration
+    persistence:
+      # Enable persistence
+      enabled: true
+      # Name of existing PVC to use (overrides all other persistence values)
+      existingClaim: ""
+      # Size of the persistent volume for data
+      size: 5Gi
+      # Storage class
+      storageClass: ""
+      # Access mode (ReadWriteMany required for multiple replicas)
+      accessMode: ReadWriteOnce
 
 # =====================================================================
 # EXTENSIONS
@@ -269,7 +419,7 @@ postgres:
 # Tika settings for full-text search
 tika:
   # Enable Tika
-  enabled: true
+  enabled: false
   # Tika image settings
   image:
     # Tika image registry
@@ -292,7 +442,7 @@ tika:
 # Web Extensions settings
 webExtensions:
   # Enable web extensions
-  enabled: true
+  enabled: false
   # Common image settings for all extensions
   image:
     # Registry for web extensions
@@ -351,7 +501,8 @@ collabora:
     username: admin
 
     # ignored if collabora.existingSecret is set
-    password: admin
+    # Leave empty to generate a random password
+    password: ""
 
   resources:
     requests:
@@ -385,7 +536,7 @@ collabora:
 # OnlyOffice settings for document collaboration
 onlyoffice:
   # Enable OnlyOffice
-  enabled: true
+  enabled: false
   # OnlyOffice image settings
   image:
     # OnlyOffice image registry
@@ -556,23 +707,6 @@ opencloud:
     # If not set and create is true, a name is generated using the fullname template
     name: ""
   
-  # Use existing secret for opencloud admin credentials (Note: secretKeyName must be adminPassword)
-  # Only used when no identity provider is configured
-  existingSecret: ""
-  
-  # Admin password for the built-in admin user
-  # NOTE: This is IGNORED when any identity provider is configured (internal Keycloak or external OIDC)
-  # When using an identity provider, admin authentication is handled by the IDP
-  # Only used for local admin authentication when both identityProvider.internal.enabled 
-  # and identityProvider.external.enabled are false
-  # ignored if opencloud.existingSecret is set
-  adminPassword: admin
-  
-  # Create demo users in the local identity management system
-  # NOTE: This is IGNORED when any identity provider is configured (internal Keycloak or external OIDC)
-  # When using an identity provider, users are managed by the IDP, not locally
-  # Only used when both identityProvider.internal.enabled and identityProvider.external.enabled are false
-  createDemoUsers: false
   # Additional services to start
   additionalServices: []
   # Services to exclude from starting
@@ -582,169 +716,111 @@ opencloud:
   excludeServices: []
   
   # Application configuration
-  # Unified configuration for OpenCloud services
-  # Settings are organized by configuration method:
-  #   - env: Settings configured via environment variables
-  #   - files: Settings configured via ConfigMap files (complex YAML/JSON structures)
+  # Configuration values for OpenCloud services
+  # The chart handles the implementation details (environment variables vs config files)
   config:
-    # Environment-based configuration
-    # These settings are passed to OpenCloud services as environment variables
-    env:
-      # Logging configuration
-      log:
-        # Log level (debug, info, warn, error)
-        level: info
-        # Enable colored log output
-        color: false
-        # Enable pretty-printed JSON logs
-        pretty: false
-      
-      # Insecure mode (for self-signed certificates)
-      insecure: true
-      
-      # Graph service configuration (roles and user management)
-      graph:
-        # Available roles - list of enabled role UUIDs
-        # Leave empty (default) to use OpenCloud's built-in default roles.
-        # The built-in defaults match the enabled roles in docs/unified-roles.txt
-        # Only specify this if you need a custom role configuration.
-        # For full role details see: docs/unified-roles.txt
-        availableRoles: []
-          # Example - custom role configuration:
-          # - "b1e2218d-eef8-4d4c-b82d-0f1a1b48f3b5"  # Viewer: View and download
-          # - "a8d5fe5e-96e3-418d-825b-534dbdf22b99"  # SpaceViewer: View and download (space-level)
-          # - "fb6c3e19-e378-47e5-b277-9732f9de6e21"  # Editor: View, download, upload, edit, add and delete
-          # - "58c63c02-1d89-4572-916a-870abc5a1b7d"  # SpaceEditor: View, download, upload, edit, add, delete including history
-          # - "2d00ce52-1fc2-4dbc-8b95-a73b73395f5a"  # FileEditor: View, download and edit (files only)
-          # - "1c996275-f1c9-4e71-abdf-a42f6495e960"  # EditorLite: View, download and upload (no edit/delete)
-          # - "312c0871-5ef7-4b3a-85b6-0e4074c64049"  # SpaceManager: Full permissions including member management
-          # - "aa97fe03-7980-45ac-9e50-b325749fd7e6"  # SecureViewer: View documents/images/PDFs with watermarks (no download)
-          # 
-          # Disabled by default (can be enabled if needed):
-          # - "d5041006-ebb3-4b4a-b6a4-7c180ecfb17d"  # ViewerListGrants: Viewer + show all invited people
-          # - "e8ea8b21-abd4-45d2-b893-8d1546378e9e"  # EditorListGrants: Editor + show all invited people
-          # - "3284f2d5-0070-4ad8-ac40-c247f7c1fb27"  # SpaceEditorWithoutVersions: SpaceEditor without version access
-          # - "c1235aea-d106-42db-8458-7d5610fb0a67"  # FileEditorListGrants: FileEditor + show all invited people
-          # - "63e64e19-8d43-42ec-a738-2b6af2610efa"  # Deny: Deny all access
-        # Assign default user role automatically
-        assignDefaultUserRole: false
-        # Username matching strategy (none, email, username)
-        usernameMatch: "none"
-      
-      # Proxy service configuration
-      proxy:
-        # Use TLS between proxy and OpenCloud services
-        tls: false
-        # Enable basic authentication
-        # Note: Automatically disabled when OIDC is enabled
-        enableBasicAuth: false
-        # Auto-provision user accounts from OIDC
-        autoprovisionAccounts: true
-        # Role assignment driver (oidc, default)
-        roleAssignmentDriver: "oidc"
-        # OIDC configuration (used when Keycloak or external OIDC is enabled)
-        oidc:
-          # Rewrite OIDC well-known endpoint
-          rewriteWellknown: true
-          # OIDC claim to use for user identification
-          userOidcClaim: "preferred_username"
-          # CS3 claim to use for user identification
-          userCs3Claim: "username"
-          # OIDC claim containing user roles
-          roleAssignmentClaim: "roles"
-          # Access token verification method (jwt, none)
-          accessTokenVerifyMethod: "jwt"
-      
-      # Frontend configuration
-      frontend:
-        # Read-only user attributes (comma-separated)
-        # These attributes are managed by the IDP and cannot be changed in OpenCloud
-        readonlyUserAttributes: "user.onPremisesSamAccountName,user.displayName,user.mail,user.passwordProfile,user.accountEnabled,user.appRoleAssignments"
-      
-      # Web UI configuration
-      web:
-        # OIDC scope to request
-        oidcScope: "openid profile email groups roles"
-      
-      # Sharing configuration
-      sharing:
-        # Require password for public shares
-        publicShareMustHavePassword: false
-      
-      # Password policy configuration
-      passwordPolicy:
-        # Filename of banned passwords list (relative to /etc/opencloud)
-        bannedPasswordsFile: "banned-password-list.txt"
-      
-      # Search configuration
-      search:
-        # Extractor type (tika, basic)
-        # Note: If set to "tika" but tika.enabled is false, will automatically fall back to "basic"
-        # This prevents service startup failures when Tika is not available
-        extractorType: "tika"
-      
-      # gRPC performance settings
-      grpc:
-        # Maximum received message size in bytes
-        maxReceivedMessageSize: "102400000"
-      
-      # Admin user configuration
-      admin:
-        # Admin user ID (leave empty for default)
-        userId: ""
+    # Logging configuration
+    log:
+      # Log level (debug, info, warn, error)
+      level: info
+      # Enable colored log output
+      color: false
+      # Enable pretty-printed JSON logs
+      pretty: false
     
-    # File-based configurations
-    # These are complex configurations that are better suited as YAML/JSON files
-    # rather than environment variables. They are mounted as ConfigMaps.
-    files:
+    # Insecure mode (for self-signed certificates)
+    insecure: true
+    
+    # Graph service configuration (roles and user management)
+    graph:
+      # Available roles - list of enabled role UUIDs
+      # Leave empty (default) to use OpenCloud's built-in default roles.
+      # The built-in defaults match the enabled roles in docs/unified-roles.txt
+      # Only specify this if you need a custom role configuration.
+      # For full role details see: docs/unified-roles.txt
+      availableRoles: []
+        # Example - custom role configuration:
+        # - "b1e2218d-eef8-4d4c-b82d-0f1a1b48f3b5"  # Viewer: View and download
+        # - "a8d5fe5e-96e3-418d-825b-534dbdf22b99"  # SpaceViewer: View and download (space-level)
+        # - "fb6c3e19-e378-47e5-b277-9732f9de6e21"  # Editor: View, download, upload, edit, add and delete
+        # - "58c63c02-1d89-4572-916a-870abc5a1b7d"  # SpaceEditor: View, download, upload, edit, add, delete including history
+        # - "2d00ce52-1fc2-4dbc-8b95-a73b73395f5a"  # FileEditor: View, download and edit (files only)
+        # - "1c996275-f1c9-4e71-abdf-a42f6495e960"  # EditorLite: View, download and upload (no edit/delete)
+        # - "312c0871-5ef7-4b3a-85b6-0e4074c64049"  # SpaceManager: Full permissions including member management
+        # - "aa97fe03-7980-45ac-9e50-b325749fd7e6"  # SecureViewer: View documents/images/PDFs with watermarks (no download)
+        # 
+        # Disabled by default (can be enabled if needed):
+        # - "d5041006-ebb3-4b4a-b6a4-7c180ecfb17d"  # ViewerListGrants: Viewer + show all invited people
+        # - "e8ea8b21-abd4-45d2-b893-8d1546378e9e"  # EditorListGrants: Editor + show all invited people
+        # - "3284f2d5-0070-4ad8-ac40-c247f7c1fb27"  # SpaceEditorWithoutVersions: SpaceEditor without version access
+        # - "c1235aea-d106-42db-8458-7d5610fb0a67"  # FileEditorListGrants: FileEditor + show all invited people
+        # - "63e64e19-8d43-42ec-a738-2b6af2610efa"  # Deny: Deny all access
+      # Assign default user role automatically
+      assignDefaultUserRole: false
+      # Username matching strategy (none, email, username)
+      usernameMatch: "none"
+    
+    # Proxy service configuration
+    proxy:
+      # Use TLS between proxy and OpenCloud services
+      tls: false
+      # Enable basic authentication
+      # Note: Automatically disabled when OIDC is enabled
+      enableBasicAuth: false
+      # Auto-provision user accounts from OIDC
+      autoprovisionAccounts: true
+      # Role assignment driver (oidc, default)
+      roleAssignmentDriver: "oidc"
+      
+      # OIDC configuration (used when Keycloak or external OIDC is enabled)
+      oidc:
+        # Rewrite OIDC well-known endpoint
+        rewriteWellknown: true
+        # OIDC claim to use for user identification
+        userOidcClaim: "preferred_username"
+        # CS3 claim to use for user identification
+        userCs3Claim: "username"
+        # OIDC claim containing user roles
+        roleAssignmentClaim: "roles"
+        # Access token verification method (jwt, none)
+        accessTokenVerifyMethod: "jwt"
+      
+      # Role mappings (OIDC claim values → OpenCloud roles)
+      # This is used for advanced role assignment scenarios
+      # Leave empty to use default role mapping based on roleAssignmentClaim
+      roleMappings: []
+        # Example:
+        # - roleName: admin
+        #   claimValue: opencloud-admin
+        # - roleName: spaceadmin
+        #   claimValue: opencloud-spaceadmin
+        # - roleName: user
+        #   claimValue: opencloud-user
+        # - roleName: guest
+        #   claimValue: opencloud-guest
+    
+    # Frontend configuration
+    frontend:
+      # Read-only user attributes (comma-separated)
+      # These attributes are managed by the IDP and cannot be changed in OpenCloud
+      readonlyUserAttributes: "user.onPremisesSamAccountName,user.displayName,user.mail,user.passwordProfile,user.accountEnabled,user.appRoleAssignments"
+    
+    # Web UI configuration
+    web:
+      # OIDC scope to request
+      oidcScope: "openid profile email groups roles"
       # Web UI theme
       theme: "owncloud"
-      
-      # App registry configuration
-      # Leave empty to use default from files/opencloud/app-registry.yaml
-      appRegistry: {}
-      
-      # CSP (Content Security Policy) configuration
-      # Allows extending default CSP directives with additional sources.
-      # The chart automatically includes required domains (OnlyOffice, Collabora, identity provider).
-      # Add custom sources to specific directives without overriding the entire CSP.
-      # All values should be properly formatted CSP source expressions (e.g., 'https://example.com', '''self''').
-      # Example:
-      csp: {}
-        # # Add custom domains to connect-src (for API calls, WebSocket connections)
-        # connectSrc:
-        #   - 'https://api.external-service.com'
-        #   - 'wss://websocket.external-service.com'
-        # 
-        # # Add custom domains to frame-src (for embedding iframes)
-        # frameSrc:
-        #   - 'https://embed.external-service.com'
-        # 
-        # # Add custom image sources to img-src
-        # imgSrc:
-        #   - 'https://cdn.external-service.com'
-        # 
-        # # Other available directives (all optional):
-        # # childSrc, defaultSrc, fontSrc, frameAncestors, manifestSrc,
-        # # mediaSrc, objectSrc, scriptSrc, styleSrc, workerSrc
-      
-      # Proxy configuration (advanced)
-      # Leave empty for default configuration
-      # Format: YAML object that will be rendered as-is into proxy.yaml
-      # Example:
-      proxy: {}
-        # role_assignment:
-        #   oidc_role_mapper:
-        #     role_mapping:
-        #       - role_name: admin
-        #         claim_value: opencloud-admin
-        #       - role_name: spaceadmin
-        #         claim_value: opencloud-spaceadmin
-        #       - role_name: user
-        #         claim_value: opencloud-user
-        #       - role_name: guest
-        #         claim_value: opencloud-guest
-
+    
+    # Sharing configuration
+    sharing:
+      # Require password for public shares
+      publicShareMustHavePassword: false
+    
+    # Password policy configuration
+    passwordPolicy:
+      # Filename of banned passwords list (relative to /etc/opencloud)
+      bannedPasswordsFile: "banned-password-list.txt"
       # Banned password list configuration
       # Format: Multi-line string (not YAML array)
       # Use the |- syntax to preserve line breaks
@@ -756,6 +832,51 @@ opencloud:
       #     password3
       # For very long lists override the file 'files/opencloud/banned-password-list.txt'
       bannedPasswordList: |-
+    
+    # Search configuration
+    search:
+      # Extractor type (tika, basic)
+      # Note: If set to "tika" but tika.enabled is false, will automatically fall back to "basic"
+      # This prevents service startup failures when Tika is not available
+      extractorType: "tika"
+    
+    # gRPC performance settings
+    grpc:
+      # Maximum received message size in bytes
+      maxReceivedMessageSize: "102400000"
+    
+    # Admin user configuration
+    admin:
+      # Admin user ID (leave empty for default)
+      userId: ""
+    
+    # App registry configuration
+    # Leave empty to use default from files/opencloud/app-registry.yaml
+    appRegistry: {}
+    
+    # CSP (Content Security Policy) configuration
+    # Allows extending default CSP directives with additional sources.
+    # The chart automatically includes required domains (OnlyOffice, Collabora, identity provider).
+    # Add custom sources to specific directives without overriding the entire CSP.
+    # All values should be properly formatted CSP source expressions (e.g., 'https://example.com', '''self''').
+    # Example:
+    csp: {}
+      # # Add custom domains to connect-src (for API calls, WebSocket connections)
+      # connectSrc:
+      #   - 'https://api.external-service.com'
+      #   - 'wss://websocket.external-service.com'
+      # 
+      # # Add custom domains to frame-src (for embedding iframes)
+      # frameSrc:
+      #   - 'https://embed.external-service.com'
+      # 
+      # # Add custom image sources to img-src
+      # imgSrc:
+      #   - 'https://cdn.external-service.com'
+      # 
+      # # Other available directives (all optional):
+      # # childSrc, defaultSrc, fontSrc, frameAncestors, manifestSrc,
+      # # mediaSrc, objectSrc, scriptSrc, styleSrc, workerSrc
   
   # Raw environment variable overrides (advanced use)
   # These will be added to the container env section after all generated env vars
@@ -952,112 +1073,6 @@ opencloud:
     # SMTP encryption method
     encryption: "starttls"
 
-  # =====================================================================
-  # STORAGE CONFIGURATION
-  # =====================================================================
-  
-  # Storage configuration
-  storage:
-    # Storage mode for user files, can be "s3" (default) or "posixfs"
-    mode: s3
-    # S3 storage configuration
-    s3:
-      # Internal MinIO instance
-      internal:
-        # Enable internal test MinIO instance (default: true)
-        enabled: true
-        # MinIO image settings
-        image:
-          # MinIO image registry
-          registry: docker.io
-          # MinIO image repository
-          repository: minio/minio
-          # MinIO image tag
-          tag: latest
-          # Image pull policy
-          pullPolicy: IfNotPresent
-        # httpRoute configuration
-        httpRoute:
-          # Enable HTTPRoute for MinIO (default: false)
-          enabled: false
-        
-        # Use existing secret for minio credentials (Note: secretKeyName must be rootUser and rootPassword)
-        existingSecret: ""
-        
-        # Minio Root user
-        # ignored if opencloud.storage.s3.internal.existingSecret is set
-        rootUser: opencloud
-
-        # Minio Root password
-        # ignored if opencloud.storage.s3.internal.existingSecret is set
-        rootPassword: opencloud-secret-key
-        
-        # Bucket name
-        bucketName: opencloud-bucket
-        # Region (optional)
-        region: "default"
-        # Resources allocation
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-          limits:
-            cpu: 1000m
-            memory: 2Gi
-        # Persistence configuration
-        persistence:
-          enabled: true
-          # Name of existing PVC to use (overrides all other persistence values)
-          existingClaim: ""
-          # Size of the persistent volume
-          size: 5Gi
-          # Storage class
-          storageClass: ""
-          # Access mode
-          accessMode: ReadWriteOnce
-      # External S3 (can be S3, Ceph, or external MinIO)
-      external:
-        # Enable external S3
-        enabled: false
-        # External S3 endpoint URL
-        endpoint: ""
-        # External S3 region
-        region: "default"
-        
-        # Use existing secret for external s3 credentials (Note: secretKeyName must be accessKey and secretKey)
-        existingSecret: ""
-        
-        # External S3 access key
-        # ignored if opencloud.storage.s3.external.existingSecret is set
-        accessKey: ""
-
-        # External S3 secret key
-        # ignored if opencloud.storage.s3.external.existingSecret is set
-        secretKey: ""
-
-        # External S3 bucket
-        bucket: ""
-        # Create bucket if it doesn't exist
-        createBucket: true
-    posixfs:
-      # The type of the cache store, supported values are: 'memory', 'redis-sentinel', 'nats-js-kv' (default), 'noop'
-      idCacheStore: nats-js-kv
-      # Path of storage root directory, default is /var/lib/opencloud/storage
-      # IMPORTANT: Path must be outside /var/lib/opencloud to avoid permission conflicts
-      # See: https://docs.opencloud.eu/docs/admin/configuration/storage/storage-posix/
-      rootPath: "/mnt/posixfs"
-      persistence:
-        # Enable persistence
-        enabled: true
-        # Name of existing PVC to use (overrides all other persistence values)
-        existingClaim: ""
-        # Size of the persistent volume for data
-        size: 5Gi
-        # Storage class
-        storageClass: ""
-        # Access mode (ReadWriteOnce or ReadWriteMany for multiple replicas)
-        accessMode: ReadWriteOnce
-
 # =====================================================================
 # GATEWAY-API HTTPRoute
 # =====================================================================
@@ -1087,3 +1102,19 @@ httpRoute:
     # Gateway annotations
     infrastructure:
       annotations: {}
+
+# =====================================================================
+# UTILITY IMAGES
+# =====================================================================
+
+# Busybox image settings (used for init containers)
+busybox:
+  image:
+    # Busybox image registry
+    registry: docker.io
+    # Busybox image repository
+    repository: library/busybox
+    # Busybox image tag
+    tag: "1.36"
+    # Image pull policy
+    pullPolicy: IfNotPresent

@@ -203,18 +203,18 @@ Generate common environment variables for OpenCloud
   value: "https://{{ include "opencloud.domain" . }}"
 
 # Available roles (only set if explicitly configured)
-{{- with .Values.opencloud.config.env.graph.availableRoles }}
+{{- with .Values.opencloud.config.graph.availableRoles }}
 - name: GRAPH_AVAILABLE_ROLES
   value: {{ join "," . | quote }}
 {{- end }}
 
 # Log settings
 - name: OC_LOG_LEVEL
-  value: {{ .Values.opencloud.config.env.log.level | quote }}
+  value: {{ .Values.opencloud.config.log.level | quote }}
 - name: OC_LOG_COLOR
-  value: {{ .Values.opencloud.config.env.log.color | quote }}
+  value: {{ .Values.opencloud.config.log.color | quote }}
 - name: OC_LOG_PRETTY
-  value: {{ .Values.opencloud.config.env.log.pretty | quote }}
+  value: {{ .Values.opencloud.config.log.pretty | quote }}
 
 # Enable services that are not started automatically
 {{- with .Values.opencloud.additionalServices }}
@@ -226,7 +226,7 @@ Generate common environment variables for OpenCloud
 {{- if .Values.opencloud.nats.external.enabled }}
   {{- $exclude = append $exclude "nats" }}
 {{- end }}
-{{- $useExternalAuth := or .Values.identityProvider.external.enabled .Values.identityProvider.internal.enabled }}
+{{- $useExternalAuth := or .Values.identityProvider.external.enabled .Values.identityProvider.keycloak.enabled }}
 {{- if $useExternalAuth }}
   {{- $exclude = append $exclude "idp" }}
 {{- end }}
@@ -237,18 +237,18 @@ Generate common environment variables for OpenCloud
 
 # Proxy settings
 - name: PROXY_TLS
-  value: {{ .Values.opencloud.config.env.proxy.tls | quote }}
+  value: {{ .Values.opencloud.config.proxy.tls | quote }}
 - name: PROXY_ENABLE_BASIC_AUTH
-  {{- $oidcEnabled := or .Values.identityProvider.external.enabled .Values.identityProvider.internal.enabled }}
+  {{- $oidcEnabled := or .Values.identityProvider.external.enabled .Values.identityProvider.keycloak.enabled }}
   {{- if $oidcEnabled }}
   value: "false"
   {{- else }}
-  value: {{ .Values.opencloud.config.env.proxy.enableBasicAuth | quote }}
+  value: {{ .Values.opencloud.config.proxy.enableBasicAuth | quote }}
   {{- end }}
 
 # INSECURE: needed if OpenCloud is using self generated certificates
 - name: OC_INSECURE
-  value: {{ tpl (toString .Values.opencloud.config.env.insecure) . | quote }}
+  value: {{ tpl (toString .Values.opencloud.config.insecure) . | quote }}
 
 # Domain configuration for web extensions
 - name: ONLYOFFICE_DOMAIN
@@ -256,18 +256,18 @@ Generate common environment variables for OpenCloud
 
 # Sharing settings
 - name: OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD
-  value: {{ .Values.opencloud.config.env.sharing.publicShareMustHavePassword | quote }}
+  value: {{ .Values.opencloud.config.sharing.publicShareMustHavePassword | quote }}
 
 # Password policy
 - name: OC_PASSWORD_POLICY_BANNED_PASSWORDS_LIST
-  value: {{ .Values.opencloud.config.env.passwordPolicy.bannedPasswordsFile | quote }}
+  value: {{ .Values.opencloud.config.passwordPolicy.bannedPasswordsFile | quote }}
 
 # Search settings
 - name: SEARCH_EXTRACTOR_TYPE
-{{- if and (eq .Values.opencloud.config.env.search.extractorType "tika") (not .Values.tika.enabled) }}
+{{- if and (eq .Values.opencloud.config.search.extractorType "tika") (not .Values.tika.enabled) }}
   value: "basic"
 {{- else }}
-  value: {{ .Values.opencloud.config.env.search.extractorType | quote }}
+  value: {{ .Values.opencloud.config.search.extractorType | quote }}
 {{- end }}
 {{- if .Values.tika.enabled }}
 - name: SEARCH_EXTRACTOR_TIKA_TIKA_URL
@@ -276,7 +276,7 @@ Generate common environment variables for OpenCloud
 
 # Performance settings
 - name: OC_GRPC_MAX_RECEIVED_MESSAGE_SIZE
-  value: {{ .Values.opencloud.config.env.grpc.maxReceivedMessageSize | quote }}
+  value: {{ .Values.opencloud.config.grpc.maxReceivedMessageSize | quote }}
 
 # CSP configuration
 - name: PROXY_CSP_CONFIG_FILE_LOCATION
@@ -327,27 +327,27 @@ Supports both external OIDC providers and internal Keycloak deployment
 External OIDC takes precedence over internal Keycloak
 */}}
 {{- define "opencloud.env.oidc" -}}
-{{- $oidcEnabled := or .Values.identityProvider.external.enabled .Values.identityProvider.internal.enabled }}
+{{- $oidcEnabled := or .Values.identityProvider.external.enabled .Values.identityProvider.keycloak.enabled }}
 {{- if $oidcEnabled }}
 {{- $useExternalOidc := .Values.identityProvider.external.enabled }}
 
 # IDP specific configuration
 - name: PROXY_AUTOPROVISION_ACCOUNTS
-  value: {{ .Values.opencloud.config.env.proxy.autoprovisionAccounts | quote }}
+  value: {{ .Values.opencloud.config.proxy.autoprovisionAccounts | quote }}
 
 # User properties are edited in the IDP, so we have to make them readonly
 - name: FRONTEND_READONLY_USER_ATTRIBUTES
-  value: {{ .Values.opencloud.config.env.frontend.readonlyUserAttributes | quote }}
+  value: {{ .Values.opencloud.config.frontend.readonlyUserAttributes | quote }}
 
 - name: PROXY_ROLE_ASSIGNMENT_DRIVER
-  value: {{ .Values.opencloud.config.env.proxy.roleAssignmentDriver | quote }}
+  value: {{ .Values.opencloud.config.proxy.roleAssignmentDriver | quote }}
 
 # OIDC Issuer URL
 - name: OC_OIDC_ISSUER
   {{- if $useExternalOidc }}
   value: {{ required "identityProvider.external.issuer is required when identityProvider.external.enabled is true" .Values.identityProvider.external.issuer | quote }}
   {{- else }}
-  value: {{ printf "https://%s/realms/%s" (include "opencloud.keycloak.domain" .) .Values.identityProvider.internal.realm | quote }}
+  value: {{ printf "https://%s/realms/%s" (include "opencloud.keycloak.domain" .) .Values.identityProvider.keycloak.realm | quote }}
   {{- end }}
 
 # Account management URL
@@ -355,11 +355,11 @@ External OIDC takes precedence over internal Keycloak
   {{- if $useExternalOidc }}
   value: {{ .Values.identityProvider.external.accountUrl | default "" | quote }}
   {{- else }}
-  value: {{ printf "https://%s/realms/%s/account" (include "opencloud.keycloak.domain" .) .Values.identityProvider.internal.realm | quote }}
+  value: {{ printf "https://%s/realms/%s/account" (include "opencloud.keycloak.domain" .) .Values.identityProvider.keycloak.realm | quote }}
   {{- end }}
 
 - name: PROXY_OIDC_REWRITE_WELLKNOWN
-  value: {{ .Values.opencloud.config.env.proxy.oidc.rewriteWellknown | quote }}
+  value: {{ .Values.opencloud.config.proxy.oidc.rewriteWellknown | quote }}
 
 # OIDC Client ID
 - name: WEB_OIDC_CLIENT_ID
@@ -371,38 +371,38 @@ External OIDC takes precedence over internal Keycloak
 
 # User identification claims
 - name: PROXY_USER_OIDC_CLAIM
-  value: {{ .Values.opencloud.config.env.proxy.oidc.userOidcClaim | quote }}
+  value: {{ .Values.opencloud.config.proxy.oidc.userOidcClaim | quote }}
 
 - name: PROXY_USER_CS3_CLAIM
-  value: {{ .Values.opencloud.config.env.proxy.oidc.userCs3Claim | quote }}
+  value: {{ .Values.opencloud.config.proxy.oidc.userCs3Claim | quote }}
 
 - name: OC_ADMIN_USER_ID
-  value: {{ .Values.opencloud.config.env.admin.userId | quote }}
+  value: {{ .Values.opencloud.config.admin.userId | quote }}
 
 - name: GRAPH_ASSIGN_DEFAULT_USER_ROLE
-  value: {{ .Values.opencloud.config.env.graph.assignDefaultUserRole | quote }}
+  value: {{ .Values.opencloud.config.graph.assignDefaultUserRole | quote }}
 
 - name: GRAPH_USERNAME_MATCH
-  value: {{ .Values.opencloud.config.env.graph.usernameMatch | quote }}
+  value: {{ .Values.opencloud.config.graph.usernameMatch | quote }}
 
 # Role assignment claim
 - name: PROXY_ROLE_ASSIGNMENT_OIDC_CLAIM
-  value: {{ .Values.opencloud.config.env.proxy.oidc.roleAssignmentClaim | quote }}
+  value: {{ .Values.opencloud.config.proxy.oidc.roleAssignmentClaim | quote }}
 
 - name: PROXY_OIDC_ACCESS_TOKEN_VERIFY_METHOD
-  value: {{ .Values.opencloud.config.env.proxy.oidc.accessTokenVerifyMethod | quote }}
+  value: {{ .Values.opencloud.config.proxy.oidc.accessTokenVerifyMethod | quote }}
 
 # OIDC metadata/discovery URL
 - name: WEB_OIDC_METADATA_URL
   {{- if $useExternalOidc }}
   value: {{ printf "%s/.well-known/openid-configuration" .Values.identityProvider.external.issuer | quote }}
   {{- else }}
-  value: {{ printf "https://%s/realms/%s/.well-known/openid-configuration" (include "opencloud.keycloak.domain" .) .Values.identityProvider.internal.realm | quote }}
+  value: {{ printf "https://%s/realms/%s/.well-known/openid-configuration" (include "opencloud.keycloak.domain" .) .Values.identityProvider.keycloak.realm | quote }}
   {{- end }}
 
 # OIDC scopes
 - name: WEB_OIDC_SCOPE
-  value: {{ .Values.opencloud.config.env.web.oidcScope | quote }}
+  value: {{ .Values.opencloud.config.web.oidcScope | quote }}
 {{- end }}
 {{- end -}}
 
@@ -410,22 +410,22 @@ External OIDC takes precedence over internal Keycloak
 Generate admin and demo user environment variables
 */}}
 {{- define "opencloud.env.admin" -}}
-{{- if not (or .Values.identityProvider.internal.enabled .Values.identityProvider.external.enabled) }}
+{{- if not (or .Values.identityProvider.keycloak.enabled .Values.identityProvider.external.enabled) }}
 # Admin user password (only used when no identity provider is configured)
 - name: IDM_ADMIN_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{- if .Values.opencloud.existingSecret }}
-              {{ .Values.opencloud.existingSecret }}
+      name: {{- if .Values.identityProvider.internal.existingSecret }}
+              {{ .Values.identityProvider.internal.existingSecret }}
             {{- else }}
               {{ include "opencloud.opencloud.fullname" . }}
             {{- end }}
       key: adminPassword
 {{- end }}
 # Demo users (only created when no identity provider is configured)
-{{- if not (or .Values.identityProvider.internal.enabled .Values.identityProvider.external.enabled) }}
+{{- if not (or .Values.identityProvider.keycloak.enabled .Values.identityProvider.external.enabled) }}
 - name: IDM_CREATE_DEMO_USERS
-  value: {{ .Values.opencloud.createDemoUsers | quote }}
+  value: {{ .Values.identityProvider.internal.createDemoUsers | quote }}
 {{- end }}
 {{- end -}}
 
@@ -462,7 +462,7 @@ Generate storage environment variables
 # Storage configuration
 # Always use decomposeds3 for user storage and decomposed for system storage
 - name: STORAGE_USERS_DRIVER
-{{- if eq .Values.opencloud.storage.mode "posixfs" }}
+{{- if .Values.storage.posixfs.enabled }}
   value: "posix"
 {{- else }}
   value: "decomposeds3"
@@ -470,51 +470,51 @@ Generate storage environment variables
 - name: STORAGE_SYSTEM_DRIVER
   value: "decomposed"
 
-{{- if eq .Values.opencloud.storage.mode "posixfs" }}
+{{- if .Values.storage.posixfs.enabled }}
+# POSIX filesystem storage
 - name: STORAGE_USERS_POSIX_ROOT
-  value: {{ .Values.opencloud.storage.posixfs.rootPath | quote }}
+  value: {{ .Values.storage.posixfs.rootPath | quote }}
 - name: STORAGE_USERS_ID_CACHE_STORE
-  value: {{ .Values.opencloud.storage.posixfs.idCacheStore | quote }}
-# S3 storage configuration
-{{- else if and (eq .Values.opencloud.storage.mode "s3") .Values.opencloud.storage.s3.external.enabled }}
+  value: {{ .Values.storage.posixfs.idCacheStore | quote }}
+{{- else if .Values.storage.external.enabled }}
 # External S3 storage
 - name: STORAGE_USERS_DECOMPOSEDS3_ENDPOINT
-  value: {{ .Values.opencloud.storage.s3.external.endpoint | quote }}
+  value: {{ .Values.storage.external.endpoint | quote }}
 - name: STORAGE_USERS_DECOMPOSEDS3_REGION
-  value: {{ .Values.opencloud.storage.s3.external.region | quote }}
+  value: {{ .Values.storage.external.region | quote }}
 - name: STORAGE_USERS_DECOMPOSEDS3_BUCKET
-  value: {{ .Values.opencloud.storage.s3.external.bucket | quote }}
+  value: {{ .Values.storage.external.bucket | quote }}
 - name: STORAGE_USERS_DECOMPOSEDS3_CREATE_BUCKET
-  value: {{ .Values.opencloud.storage.s3.external.createBucket | default true | quote }}
+  value: {{ .Values.storage.external.createBucket | default true | quote }}
 - name: STORAGE_USERS_DECOMPOSEDS3_ACCESS_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.opencloud.storage.s3.external.existingSecret | default (printf "%s-s3" (include "opencloud.opencloud.fullname" .)) }}
+      name: {{ .Values.storage.external.existingSecret | default (printf "%s-s3" (include "opencloud.opencloud.fullname" .)) }}
       key: accessKey
 - name: STORAGE_USERS_DECOMPOSEDS3_SECRET_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.opencloud.storage.s3.external.existingSecret | default (printf "%s-s3" (include "opencloud.opencloud.fullname" .)) }}
+      name: {{ .Values.storage.external.existingSecret | default (printf "%s-s3" (include "opencloud.opencloud.fullname" .)) }}
       key: secretKey
 {{- else }}
 # Internal S3 (MinIO) storage
 - name: STORAGE_USERS_DECOMPOSEDS3_ENDPOINT
   value: {{ printf "http://%s:9000" (include "opencloud.minio.fullname" .) | quote }}
 - name: STORAGE_USERS_DECOMPOSEDS3_REGION
-  value: {{ .Values.opencloud.storage.s3.internal.region | default "default" | quote }}
+  value: {{ .Values.storage.internal.region | default "default" | quote }}
 - name: STORAGE_USERS_DECOMPOSEDS3_BUCKET
-  value: {{ .Values.opencloud.storage.s3.internal.bucketName | quote }}
+  value: {{ .Values.storage.internal.bucketName | quote }}
 - name: STORAGE_USERS_DECOMPOSEDS3_CREATE_BUCKET
   value: "true"
 - name: STORAGE_USERS_DECOMPOSEDS3_ACCESS_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.opencloud.storage.s3.internal.existingSecret | default (include "opencloud.minio.fullname" .) }}
+      name: {{ .Values.storage.internal.existingSecret | default (include "opencloud.minio.fullname" .) }}
       key: rootUser
 - name: STORAGE_USERS_DECOMPOSEDS3_SECRET_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.opencloud.storage.s3.internal.existingSecret | default (include "opencloud.minio.fullname" .) }}
+      name: {{ .Values.storage.internal.existingSecret | default (include "opencloud.minio.fullname" .) }}
       key: rootPassword
 {{- end }}
 {{- end -}}

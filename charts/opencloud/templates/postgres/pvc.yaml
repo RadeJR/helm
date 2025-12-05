@@ -1,4 +1,4 @@
-{{- if and .Values.postgres.enabled .Values.identityProvider.internal.enabled (and .Values.postgres.persistence.enabled (not .Values.postgres.persistence.existingClaim)) }}
+{{- if and .Values.identityProvider.keycloak.postgres.enabled .Values.identityProvider.keycloak.enabled (and .Values.identityProvider.keycloak.postgres.persistence.enabled (not .Values.identityProvider.keycloak.postgres.persistence.existingClaim)) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -10,11 +10,11 @@ metadata:
     app.kubernetes.io/component: postgres
 spec:
   accessModes:
-    - {{ .Values.postgres.persistence.accessMode | quote }}
+    - {{ .Values.identityProvider.keycloak.postgres.persistence.accessMode | quote }}
   resources:
     requests:
-      storage: {{ .Values.postgres.persistence.size | quote }}
-  {{- with include "opencloud.storageClass" (dict "local" .Values.postgres.persistence.storageClass "global" .Values.global.storage.storageClass) }}
+      storage: {{ .Values.identityProvider.keycloak.postgres.persistence.size | quote }}
+  {{- with include "opencloud.storageClass" (dict "local" .Values.identityProvider.keycloak.postgres.persistence.storageClass "global" .Values.global.storage.storageClass) }}
   storageClassName: {{ . | quote }}
   {{- end }}
 {{- end }}

@@ -1,4 +1,4 @@
-{{- if .Values.identityProvider.internal.enabled }}
+{{- if .Values.identityProvider.keycloak.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +7,7 @@ metadata:
     {{- include "opencloud.labels" . | nindent 4 }}
     app.kubernetes.io/component: keycloak
 spec:
-  replicas: {{ .Values.identityProvider.internal.replicas }}
+  replicas: {{ .Values.identityProvider.keycloak.replicas }}
   selector:
     matchLabels:
       {{- include "opencloud.selectorLabels" . | nindent 6 }}
@@ -24,8 +24,8 @@ spec:
         fsGroup: 1000
       containers:
         - name: keycloak
-          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.identityProvider.internal.image "global" .Values.global) | quote }}
-          imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.identityProvider.internal.image.pullPolicy "global" .Values.global) }}
+          image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.identityProvider.keycloak.image "global" .Values.global) | quote }}
+          imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.identityProvider.keycloak.image.pullPolicy "global" .Values.global) }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -50,12 +50,12 @@ spec:
             - name: KC_DB
               value: postgres
             - name: KC_DB_URL
-              value: jdbc:postgresql://{{ include "opencloud.postgres.fullname" . }}:5432/{{ .Values.postgres.database }}
+              value: jdbc:postgresql://{{ include "opencloud.postgres.fullname" . }}:5432/{{ .Values.identityProvider.keycloak.postgres.database }}
             - name: KC_DB_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: {{- if .Values.postgres.existingSecret }}
-                          {{ .Values.postgres.existingSecret }}
+                  name: {{- if .Values.identityProvider.keycloak.postgres.existingSecret }}
+                          {{ .Values.identityProvider.keycloak.postgres.existingSecret }}
                         {{- else }}
                           {{ include "opencloud.postgres.fullname" . }}
                         {{- end }}
@@ -63,8 +63,8 @@ spec:
             - name: KC_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{- if .Values.postgres.existingSecret }}
-                          {{ .Values.postgres.existingSecret }}
+                  name: {{- if .Values.identityProvider.keycloak.postgres.existingSecret }}
+                          {{ .Values.identityProvider.keycloak.postgres.existingSecret }}
                         {{- else }}
                           {{ include "opencloud.postgres.fullname" . }}
                         {{- end }}
@@ -74,8 +74,8 @@ spec:
             - name: KEYCLOAK_ADMIN
               valueFrom:
                 secretKeyRef:
-                  name: {{- if .Values.identityProvider.internal.existingSecret }}
-                          {{ .Values.identityProvider.internal.existingSecret }}
+                  name: {{- if .Values.identityProvider.keycloak.existingSecret }}
+                          {{ .Values.identityProvider.keycloak.existingSecret }}
                         {{- else }}
                           {{ include "opencloud.keycloak.fullname" . }}
                         {{- end }}
@@ -83,32 +83,32 @@ spec:
             - name: KEYCLOAK_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{- if .Values.identityProvider.internal.existingSecret }}
-                          {{ .Values.identityProvider.internal.existingSecret }}
+                  name: {{- if .Values.identityProvider.keycloak.existingSecret }}
+                          {{ .Values.identityProvider.keycloak.existingSecret }}
                         {{- else }}
                           {{ include "opencloud.keycloak.fullname" . }}
                         {{- end }}
                   key: adminPassword
-            {{- if .Values.identityProvider.internal.cors.enabled }}
+            {{- if .Values.identityProvider.keycloak.cors.enabled }}
             - name: KC_SPI_CORS_ENABLED
               value: "true"
-            {{- if .Values.identityProvider.internal.cors.allowAllOrigins }}
+            {{- if .Values.identityProvider.keycloak.cors.allowAllOrigins }}
             - name: KC_SPI_CORS_ORIGINS
               value: "*"
             {{- else }}
             - name: KC_SPI_CORS_ORIGINS
-              value: {{ join "," .Values.identityProvider.internal.cors.origins | quote }}
+              value: {{ join "," .Values.identityProvider.keycloak.cors.origins | quote }}
             {{- end }}
             - name: KC_SPI_CORS_METHODS
-              value: {{ .Values.identityProvider.internal.cors.methods | quote }}
+              value: {{ .Values.identityProvider.keycloak.cors.methods | quote }}
             - name: KC_SPI_CORS_HEADERS
-              value: {{ .Values.identityProvider.internal.cors.headers | quote }}
+              value: {{ .Values.identityProvider.keycloak.cors.headers | quote }}
             - name: KC_SPI_CORS_EXPOSED_HEADERS
-              value: {{ .Values.identityProvider.internal.cors.exposedHeaders | quote }}
+              value: {{ .Values.identityProvider.keycloak.cors.exposedHeaders | quote }}
             - name: KC_SPI_CORS_ALLOW_CREDENTIALS
-              value: {{ .Values.identityProvider.internal.cors.allowCredentials | quote }}
+              value: {{ .Values.identityProvider.keycloak.cors.allowCredentials | quote }}
             - name: KC_SPI_CORS_MAX_AGE
-              value: {{ .Values.identityProvider.internal.cors.maxAge | quote }}
+              value: {{ .Values.identityProvider.keycloak.cors.maxAge | quote }}
             {{- end }}
           ports:
             - name: http
@@ -121,7 +121,7 @@ spec:
               mountPath: /opt/keycloak/data/import-dist/opencloud-realm.json
               subPath: opencloud-realm.json
           resources:
-            {{- toYaml .Values.identityProvider.internal.resources | nindent 12 }}
+            {{- toYaml .Values.identityProvider.keycloak.resources | nindent 12 }}
       volumes:
         - name: script
           configMap:
