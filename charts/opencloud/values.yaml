@@ -83,10 +83,15 @@ global:
       # Example:
       # cert-manager.io/cluster-issuer: letsencrypt
 
-    # Default TLS configuration
-    # Can be overridden per service
+    # Default TLS secret name for all ingress resources
+    # When a service enables TLS (ingress.tls.enabled=true):
+    # - If service specifies tls.secretName: use that value
+    # - Else if global tls.secretName is set: use the global value
+    # - Else: auto-generate a secret name like "<release-name>-<service>-tls"
     tls:
-      enabled: false
+      # Default TLS secret name shared by all ingresses when TLS is enabled
+      # Leave empty to auto-generate per-service secret names
+      # Set to share the same secret across all services (useful for wildcard certs)
       secretName: ""
 
 # =====================================================================

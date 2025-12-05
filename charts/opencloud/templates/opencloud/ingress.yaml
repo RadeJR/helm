@@ -2,8 +2,15 @@
 {{- $ingressClassName := .Values.opencloud.ingress.ingressClassName | default .Values.global.ingress.ingressClassName }}
 {{- $annotationsPreset := .Values.opencloud.ingress.annotationsPreset | default .Values.global.ingress.annotationsPreset }}
 {{- $annotations := merge (deepCopy .Values.opencloud.ingress.annotations) (deepCopy .Values.global.ingress.annotations) }}
-{{- $tlsEnabled := .Values.opencloud.ingress.tls.enabled | default .Values.global.ingress.tls.enabled }}
-{{- $tlsSecretName := .Values.opencloud.ingress.tls.secretName | default .Values.global.ingress.tls.secretName }}
+{{- $tlsEnabled := .Values.opencloud.ingress.tls.enabled }}
+{{- $tlsSecretName := "" }}
+{{- if .Values.opencloud.ingress.tls.secretName }}
+  {{- $tlsSecretName = .Values.opencloud.ingress.tls.secretName }}
+{{- else if .Values.global.ingress.tls.secretName }}
+  {{- $tlsSecretName = .Values.global.ingress.tls.secretName }}
+{{- else }}
+  {{- $tlsSecretName = printf "%s-opencloud-tls" (include "opencloud.fullname" .) }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -23,9 +30,7 @@ spec:
   tls:
     - hosts:
         - {{ .Values.global.domain.opencloud | quote }}
-      {{- if $tlsSecretName }}
       secretName: {{ $tlsSecretName }}
-      {{- end }}
   {{- end }}
   rules:
     - host: {{ .Values.global.domain.opencloud | quote }}

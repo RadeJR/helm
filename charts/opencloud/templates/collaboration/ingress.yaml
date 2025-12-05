@@ -2,8 +2,15 @@
 {{- $ingressClassName := .Values.onlyoffice.collaboration.ingress.ingressClassName | default .Values.global.ingress.ingressClassName }}
 {{- $annotationsPreset := .Values.onlyoffice.collaboration.ingress.annotationsPreset | default .Values.global.ingress.annotationsPreset }}
 {{- $annotations := merge (deepCopy .Values.onlyoffice.collaboration.ingress.annotations) (deepCopy .Values.global.ingress.annotations) }}
-{{- $tlsEnabled := .Values.onlyoffice.collaboration.ingress.tls.enabled | default .Values.global.ingress.tls.enabled }}
-{{- $tlsSecretName := .Values.onlyoffice.collaboration.ingress.tls.secretName | default .Values.global.ingress.tls.secretName }}
+{{- $tlsEnabled := .Values.onlyoffice.collaboration.ingress.tls.enabled }}
+{{- $tlsSecretName := "" }}
+{{- if .Values.onlyoffice.collaboration.ingress.tls.secretName }}
+  {{- $tlsSecretName = .Values.onlyoffice.collaboration.ingress.tls.secretName }}
+{{- else if .Values.global.ingress.tls.secretName }}
+  {{- $tlsSecretName = .Values.global.ingress.tls.secretName }}
+{{- else }}
+  {{- $tlsSecretName = printf "%s-collaboration-tls" (include "opencloud.fullname" .) }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -23,9 +30,7 @@ spec:
   tls:
     - hosts:
         - {{ .Values.global.domain.wopi | quote }}
-      {{- if $tlsSecretName }}
       secretName: {{ $tlsSecretName }}
-      {{- end }}
   {{- end }}
   rules:
     - host: {{ .Values.global.domain.wopi | quote }}
