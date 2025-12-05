@@ -855,7 +855,7 @@ opencloud:
       # Name of existing PVC to use (overrides all other persistence values)
       existingClaim: ""
       # Size of the persistent volume for config
-      size: 5Gi
+      size: 1Gi
       # Storage class
       storageClass: ""
       # Access mode (ReadWriteOnce or ReadWriteMany for multiple replicas)
@@ -866,7 +866,7 @@ opencloud:
       # Name of existing PVC to use (overrides all other persistence values)
       existingClaim: ""
       # Size of the persistent volume for data
-      size: 30Gi
+      size: 5Gi
       # Storage class
       storageClass: ""
       # Access mode (ReadWriteOnce or ReadWriteMany for multiple replicas)
@@ -1010,7 +1010,7 @@ opencloud:
           # Name of existing PVC to use (overrides all other persistence values)
           existingClaim: ""
           # Size of the persistent volume
-          size: 30Gi
+          size: 5Gi
           # Storage class
           storageClass: ""
           # Access mode
@@ -1052,11 +1052,11 @@ opencloud:
         # Name of existing PVC to use (overrides all other persistence values)
         existingClaim: ""
         # Size of the persistent volume for data
-        size: 30Gi
+        size: 5Gi
         # Storage class
         storageClass: ""
         # Access mode (ReadWriteOnce or ReadWriteMany for multiple replicas)
-        accessMode: ReadWriteMany
+        accessMode: ReadWriteOnce
 
 # =====================================================================
 # GATEWAY-API HTTPRoute
