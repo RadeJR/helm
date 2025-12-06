@@ -23,11 +23,22 @@ spec:
     spec:
       securityContext:
         fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
       initContainers:
         # Wait for OpenCloud to be ready
         - name: wait-for-opencloud
           image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           command: ['sh', '-c', 'until wget -q -O- http://{{ include "opencloud.opencloud.fullname" . }}:9200/health; do echo waiting for opencloud; sleep 5; done;']
 
         {{- if not .Values.opencloud.persistence.config.enabled }}
@@ -35,6 +46,16 @@ spec:
         - name: copy-config
           image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           command: ['sh', '-c', 'mkdir -p /etc/opencloud && wget -q -O /etc/opencloud/config.json http://{{ include "opencloud.opencloud.fullname" . }}:9200/api/v1/config/secrets || echo "Failed to get config from OpenCloud"']
           volumeMounts:
             - name: etc-opencloud
@@ -46,6 +67,16 @@ spec:
         - name: wait-for-onlyoffice
           image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           command: ['sh', '-c', 'until wget -q -O- http://{{ include "opencloud.fullname" . }}-onlyoffice:80/hosting/discovery; do echo waiting for onlyoffice; sleep 2; done;']
         {{- end }}
         {{- if .Values.collabora.enabled }}
@@ -53,12 +84,32 @@ spec:
         - name: wait-for-collabora
           image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           command: ['sh', '-c', 'until wget -q -O- http://{{ include "opencloud.fullname" . }}-collabora:9980/hosting/discovery; do echo waiting for collabora; sleep 2; done;']
         {{- end }}
       containers:
         - name: collaboration
           image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.opencloud.image "global" .Values.global) | quote }}
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.opencloud.image.pullPolicy "global" .Values.global) }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           command: ["/bin/sh"]
           args: ["-c", "opencloud collaboration server"]
           env:
