@@ -30,7 +30,7 @@ spec:
           imagePullPolicy: {{ include "opencloud.image.pullPolicy" (dict "pullPolicy" .Values.busybox.image.pullPolicy "global" .Values.global) | quote }}
           command: ['sh', '-c', 'until wget -q -O- http://{{ include "opencloud.opencloud.fullname" . }}:9200/health; do echo waiting for opencloud; sleep 5; done;']
 
-        {{- if not .Values.opencloud.persistence.enabled }}
+        {{- if not .Values.opencloud.persistence.config.enabled }}
         # Copy config from OpenCloud API if persistence is disabled
         - name: copy-config
           image: {{ include "opencloud.image" (dict "Chart" .Chart "imageValues" .Values.busybox.image "global" .Values.global) | quote }}
