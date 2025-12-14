@@ -403,6 +403,17 @@ Email notification settings:
 | `opencloud.smtp.authentication` | SMTP authentication method (plain, login, none) | `plain` |
 | `opencloud.smtp.encryption` | SMTP encryption (starttls, tls, none) | `starttls` |
 
+#### JWT Secret Configuration
+
+The JWT secret is used for signing tokens for internal service communication. The chart automatically generates and persists a secure random secret if not provided.
+
+| Parameter | Description | Default |
+| --------- | ----------- | ------- |
+| `opencloud.config.jwtSecret.existingSecret` | Name of existing secret containing JWT secret (key must be `jwtSecret`) | `""` |
+| `opencloud.config.jwtSecret.value` | JWT secret value (ignored if existingSecret is set, auto-generated if empty) | `""` |
+
+> **Note**: When both `existingSecret` and `value` are empty, the chart automatically generates a random 32-character secret and persists it across helm upgrades using a managed Kubernetes secret named `{release}-opencloud-jwt`.
+
 ### OpenCloud Storage Settings
 
 | Parameter | Description | Default |

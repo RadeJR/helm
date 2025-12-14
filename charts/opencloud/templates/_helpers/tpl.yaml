@@ -281,6 +281,17 @@ Generate common environment variables for OpenCloud
 # CSP configuration
 - name: PROXY_CSP_CONFIG_FILE_LOCATION
   value: "/etc/opencloud/csp.yaml"
+
+# JWT Secret
+- name: OC_JWT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{- if .Values.opencloud.config.jwtSecret.existingSecret }}
+              {{ .Values.opencloud.config.jwtSecret.existingSecret }}
+            {{- else }}
+              {{ include "opencloud.opencloud.fullname" . }}-jwt
+            {{- end }}
+      key: jwtSecret
 {{- end -}}
 
 {{/*

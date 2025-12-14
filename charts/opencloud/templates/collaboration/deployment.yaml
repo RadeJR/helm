@@ -162,6 +162,15 @@ spec:
               value: "{{ .Values.opencloud.logLevel }}"
             - name: OC_URL
               value: "https://{{ include "opencloud.domain" . }}"
+            - name: OC_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{- if .Values.opencloud.config.jwtSecret.existingSecret }}
+                          {{ .Values.opencloud.config.jwtSecret.existingSecret }}
+                        {{- else }}
+                          {{ include "opencloud.opencloud.fullname" . }}-jwt
+                        {{- end }}
+                  key: jwtSecret
           ports:
             - name: http
               containerPort: 9300

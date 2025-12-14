@@ -736,6 +736,16 @@ opencloud:
     # Insecure mode (for self-signed certificates)
     insecure: true
     
+    # JWT Secret configuration
+    jwtSecret:
+      # Use existing secret for JWT secret (Note: secretKeyName must be jwtSecret)
+      existingSecret: ""
+      
+      # JWT Secret value for OpenCloud
+      # ignored if opencloud.config.jwtSecret.existingSecret is set
+      # Leave empty to generate a random secret
+      value: ""
+    
     # Graph service configuration (roles and user management)
     graph:
       # Available roles - list of enabled role UUIDs
