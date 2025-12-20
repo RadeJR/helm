@@ -790,14 +790,14 @@ opencloud:
       # Leave empty to use default role mapping based on roleAssignmentClaim
       roleMappings: []
         # Example:
-        # - roleName: admin
-        #   claimValue: opencloud-admin
-        # - roleName: spaceadmin
-        #   claimValue: opencloud-spaceadmin
-        # - roleName: user
-        #   claimValue: opencloud-user
-        # - roleName: guest
-        #   claimValue: opencloud-guest
+        # - role_name: admin
+        #   claim_value: opencloud-admin
+        # - role_name: spaceadmin
+        #   claim_value: opencloud-spaceadmin
+        # - role_name: user
+        #   claim_value: opencloud-user
+        # - role_name: guest
+        #   claim_value: opencloud-guest
     
     # Frontend configuration
     frontend:

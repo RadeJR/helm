@@ -30,9 +30,10 @@ data:
       oidc_role_mapper:
         role_mapping:
 {{- range .Values.opencloud.config.proxy.roleMappings }}
-          - role_name: {{ .roleName }}
-            claim_value: {{ .claimValue }}
+          - role_name: {{ .role_name }}
+            claim_value: {{ .claim_value }}
 {{- end }}
+
 {{- end }}
 
   # Banned password list
